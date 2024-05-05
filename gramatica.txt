@@ -1,0 +1,56 @@
+-- * means 0 or more
+<string>::= ALPHA (ALPHA | DIGIT)*
+<number>::= (0 ... 9)*
+<date>::= MM/DD/YYYY
+
+-- Define a program
+<PROGRAM> := <USE_CLAUSE> <DDL_CLAUSES> <DML_CLAUSES>
+
+-- Define a DDL clauses
+<DDL_CLAUSES> := <CREATE_CLAUSE> | <DROP_CLAUSE>
+
+-- Define a DML clauses
+<DML_CLAUSES> := <SELECT_CLAUSE> | <INSERT_CLAUSE> | <UPDATE_CLAUSE> | <DELETE_CLAUSE>
+
+
+==Util==
+<USE_CLAUSE>::= USE <path> ;
+<path>::=  <directory> / <database_name>  
+<directory>::= / (<directory_name>)*
+<directory_name>::= <string>
+<database_name>::= <string>
+
+
+==Definition==
+<table_name>::= <string> ;
+<CREATE_CLAUSE>::= CREATE TABLE <table_name> OPEN_PAR <column_definition> (<column_definition>)* CLOSE_PAR
+    <column_definition>::= <column_name> <data_type> <constraint>*
+        <column_name>::= <string>
+        <data_type>::= NUMBER | STRING | DATE
+        <constraint>::= PRIMARY KEY | NOT NULL | UNIQUE | NULL
+
+<DROP_CLAUSE>::= DROP TABLE <table_name>
+
+
+==Manipulation==
+<SELECT_CLAUSE>::= SELECT { ASTERISK | <column_name> [, <column_name> (AS <alias>)?]*} 
+            FROM <table_name> 
+            <WHERE_CLAUSE>? (AND | OR <WHERE_CLAUSE>)*
+            <GROUP_BY_CLAUSE>?  
+            <ORDER_BY_CLAUSE>? 
+            <LIMIT_CLAUSE>? ;
+
+    <WHERE_CLAUSE>::= WHERE <column_name> <operator> <value>
+        <operator>::= = | > | < | >= | <= | <>
+    <ORDER_BY_CLAUSE>::= ORDER BY <column_name> <ORDER_TYPE>? -- Se puede ordenar por mas de una columna?
+        <ORDER_TYPE>::= ASC | DESC 
+    <LIMIT_CLAUSE>::= LIMIT <number>
+    <GROUP_BY_CLAUSE>::= GROUP BY <column_name>
+    
+<INSERT_CLAUSE>::= INSERT INTO <table_name> OPEN_PAR <column_name> (, <column_name>)*  CLOSE_PAR 
+                                            VALUES 
+                                            OPEN_PAR <value> (, <value>)* CLOSE_PAR ;
+    <value>::= <string> | <number> | <date>
+
+<UPDATE_CLAUSE>::= UPDATE <table_name> SET <column_name> = <value> <WHERE_CLAUSE>;
+<DELETE_CLAUSE>::= DELETE FROM <table_name> <WHERE_CLAUSE>;
