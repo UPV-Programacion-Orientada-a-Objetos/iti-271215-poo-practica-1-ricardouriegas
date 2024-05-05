@@ -27,28 +27,37 @@ public class Lexer {
 
     static {
         keywords = new HashMap<>();
-        keywords.put("CREATE", TokenType.CREATE);
-        keywords.put("DROP", TokenType.DROP);
-        keywords.put("TABLE", TokenType.TABLE);
+        keywords.put("INT", INT);
+        keywords.put("VARCHAR", VARCHAR);
+        keywords.put("BOOLEAN", BOOLEAN);
+        keywords.put("DATE", DATE);
 
-        keywords.put("SELECT", TokenType.SELECT);
-        keywords.put("INSERT", TokenType.INSERT);
-        keywords.put("UPDATE", TokenType.UPDATE);
-        keywords.put("DELETE", TokenType.DELETE);
+        keywords.put("TRUE", TRUE);
+        keywords.put("FALSE", FALSE);
+        keywords.put("PRIMARY", PRIMARY);
+        keywords.put("KEY", KEY);
+        keywords.put("DATABASE", DATABASE);
+        keywords.put("TABLE", TABLE);
 
-        keywords.put("WHERE", TokenType.WHERE);
-        keywords.put("FROM", TokenType.FROM);
-        keywords.put("ORDER_BY", TokenType.ORDER_BY);
-        keywords.put("LIMIT", TokenType.LIMIT);
-        keywords.put("VALUES", TokenType.VALUES);
-        keywords.put("INTO", TokenType.INTO);
-        keywords.put("AND", TokenType.AND);
-        keywords.put("OR", TokenType.OR);
-        keywords.put("NOT", TokenType.NOT);
-        keywords.put("NULL", TokenType.NULL);
+        keywords.put("CREATE", CREATE);
+        keywords.put("DROP", DROP);
 
-        // maybe is not necessary DATABASE bc of $PATH
-        // keywords.put("DATABASE", DATABASE);
+        keywords.put("SELECT", SELECT);
+        keywords.put("INSERT", INSERT);
+        keywords.put("UPDATE", UPDATE);
+        keywords.put("DELETE", DELETE);
+
+        keywords.put("WHERE", WHERE);
+        keywords.put("FROM", FROM);
+        keywords.put("ORDER_BY", ORDER_BY);
+        keywords.put("LIMIT", LIMIT);
+        keywords.put("VALUES", VALUES);
+        keywords.put("INTO", INTO);
+        keywords.put("AND", AND);
+        keywords.put("OR", OR);
+        keywords.put("NOT", NOT);
+        keywords.put("NULL", NULL);
+
     }
 
     /**
@@ -71,7 +80,7 @@ public class Lexer {
             scanToken();
         }
 
-        tokens.add(new Token(TokenType.EOF, "", null, line));
+        tokens.add(new Token(TokenType.EOS, "", null, line));
         return tokens;
     }
 
@@ -105,12 +114,8 @@ public class Lexer {
             case '/':
                 addToken(SLASH);
                 break;
-            case '*':
-                // if (match('*')) {
-                //     addToken(POWER);
-                // } else {
-                    addToken(STAR);
-                // }
+            case '*': // an asterisk can mean ALL if theres not a number after
+                
                 break;
             case ';':
                 addToken(SEMICOLON);
@@ -161,18 +166,13 @@ public class Lexer {
         // see if it matches anything in the map
         String text = query.substring(start, current);
         TokenType type = keywords.get(text);
+        
         if (type == null)
             type = IDENTIFIER;
         addToken(type);
-
-        // 
-        addToken(IDENTIFIER);
     }
 
-    private boolean isAlphaNumeric(char c) {
-        return isAlpha(c) || isDigit(c);
-    }
-
+    
     /**
      * Just a method to check if the character is a letter
      * 
@@ -182,7 +182,10 @@ public class Lexer {
     private boolean isAlpha(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
     }
-
+    
+    private boolean isAlphaNumeric(char c) {
+        return isAlpha(c) || isDigit(c);
+    }
     /**
      * Just a method to check if the character is a digit
      * 
