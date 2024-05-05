@@ -57,6 +57,8 @@ public class Lexer {
         keywords.put("OR", OR);
         keywords.put("NOT", NOT);
         keywords.put("NULL", NULL);
+        keywords.put("ASC", ASC);
+        keywords.put("DESC", DESC);
 
     }
 
@@ -149,7 +151,7 @@ public class Lexer {
                 } else if (isAlpha(c)) {
                     identifier();
                 } else {
-                    App.error(line, "Unexpected character.");
+                    App.error(line, "Unexpected character: " + c);
                 }
                 break;
         }
@@ -212,6 +214,7 @@ public class Lexer {
                 advance();
         }
 
+        // convert the string to a double
         addToken(NUMBER,
                 Double.parseDouble(query.substring(start, current)));
     }

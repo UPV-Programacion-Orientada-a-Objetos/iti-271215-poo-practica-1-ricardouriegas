@@ -5,6 +5,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
+/**
+ * Somthing i need to say:
+ * I take order by has order_by (with the underscore)
+ * And i make all the sentence in uppercase
+ * I use only the doble quotes ("") for the strings not the single quotes ('')
+ */
 public class App {
     static boolean hadError = false;
 
