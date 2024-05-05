@@ -304,20 +304,10 @@ public class Lexer {
     }
 
     /**
-     * This method will scan the token
+     * This method will return true if we are at the end of the query
      */
     private boolean isAtEnd() {
         return current >= query.length();
     }
 
-
-    /**
-     * This method will parse the query
-     * 
-     * @param query
-     * @return
-     */
-    public String parseQuery() {
-        return query;
-    }
 }
