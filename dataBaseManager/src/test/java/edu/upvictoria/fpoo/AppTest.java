@@ -39,8 +39,5 @@ public class AppTest
     //     assertTrue( true );
     // }
 
-    @Test
-    public void testApp() {
-        assertEquals(1, 1);
-    }
+    
 }

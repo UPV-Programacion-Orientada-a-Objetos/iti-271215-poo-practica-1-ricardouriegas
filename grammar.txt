@@ -1,7 +1,20 @@
 -- * means 0 or more
+-- based on:
+    https://teiid.github.io/teiid-documents/9.0.x/content/reference/BNF_for_SQL_Grammar.html
 <string>::= ALPHA (ALPHA | DIGIT)*
 <number>::= (0 ... 9)*
 <date>::= MM/DD/YYYY
+
+-- Operation symbols with precedence
+expression     := equality ;
+equality       := comparison ( ( "!=" | "==" ) comparison )* ;
+comparison     := term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+term           := factor ( ( "-" | "+" ) factor )* ;
+factor         := unary ( ( "/" | "*" ) unary )* ;
+unary          := ( "!" | "-" ) unary
+               | primary ;
+primary        := NUMBER | STRING | "true" | "false" | "nil"
+               | "(" expression ")" ;
 
 -- Define a program
 <PROGRAM> := <USE_CLAUSE> <DDL_CLAUSES> <DML_CLAUSES>

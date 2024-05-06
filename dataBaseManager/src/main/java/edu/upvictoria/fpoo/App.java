@@ -52,6 +52,14 @@ public class App {
         report(line, "", message);
     }
 
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOS) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, " at '" + token.lexeme + "'", message);
+        }
+    }
+
     /**
      * This method will report an error
      * 

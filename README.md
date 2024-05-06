@@ -43,3 +43,4 @@ A continuación se describe el conjunto de entregables:
   3. Como parte del repositorio se deberán programar todas las pruebas unitarias necesarias para probar el funcionamiento del sistema.
   4. Se deberá realizar un reporte que contenga la explicación del funcionamiento del sistema, así como la explicación a detalle de las pruebas unitarias realizadas. **EL REPORTE SE SUBIRÁ EN FORMATO PDF EN CLASSROOM*.
 
+
