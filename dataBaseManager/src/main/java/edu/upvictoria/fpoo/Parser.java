@@ -4,12 +4,19 @@ import java.util.List;
 
 import static edu.upvictoria.fpoo.TokenType.*;
 
-public class Parser{
-    /**
-     * TODO: Implement the class
-     */
+/**
+ * A parser really has two jobs:
+ * 
+ * 1. Given a valid sequence of tokens, produce a corresponding syntax tree.
+ * 
+ * 2. Given an invalid sequence of tokens, detect any errors and tell the user
+ * about their mistakes.
+ */
+public class Parser {
 
-    static class ParseError extends RuntimeException {}
+    static class ParseError extends RuntimeException {
+        // This is a simple sentinel class used to unwind the parser
+    }
 
     private final List<Token> tokens;
     private int current = 0;
@@ -18,11 +25,24 @@ public class Parser{
         this.tokens = tokens;
     }
 
+    // The parser
+    Expression parse() {
+        try {
+            return expression();
+        } catch (ParseError error) {
+            // The parser promises not to crash or hang on invalid syntax, 
+            // but it doesn’t promise to return a usable syntax tree 
+            // if an error is found of course
+            return null;
+        }
+    }
+
+    // program := statement* EOF ;
     private Expression expression() {
         return equality();
     }
 
-    // equality → comparison ( ( "!=" | "==" ) comparison )* ;
+    // equality := comparison ( ( "!=" | "==" ) comparison )* ;
     private Expression equality() {
         Expression expr = comparison();
 
@@ -35,7 +55,7 @@ public class Parser{
         return expr;
     }
 
-    // comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+    // comparison := term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     private Expression comparison() {
         Expression expr = term();
 
@@ -48,6 +68,7 @@ public class Parser{
         return expr;
     }
 
+    // term := factor ( ( "-" | "+" ) factor )* ;
     private Expression term() {
         Expression expr = factor();
 
@@ -60,7 +81,7 @@ public class Parser{
         return expr;
     }
 
-    // factor → unary ( ( "/" | "*" ) unary )* ;
+    // factor := unary ( ( "/" | "*" ) unary )* ;
     private Expression factor() {
         Expression expr = unary();
 
@@ -73,8 +94,8 @@ public class Parser{
         return expr;
     }
 
-    // unary → ( "!" | "-" ) unary
-    //     | primary ;
+    // unary := ( "!" | "-" ) unary
+    // | primary ;
     private Expression unary() {
         if (match(BANG, MINUS)) {
             Token operator = previous();
@@ -85,8 +106,8 @@ public class Parser{
         return primary();
     }
 
-    // primary → NUMBER | STRING | "true" | "false" | "nil"
-    //     | "(" expression ")" ;
+    // primary := NUMBER | STRING | "true" | "false" | "nil"
+    // | "(" expression ")" ;
     private Expression primary() {
         if (match(NUMBER, STRING))
             return new Expression.Literal(previous().literal);
@@ -106,9 +127,18 @@ public class Parser{
             return new Expression.Grouping(expr);
         }
 
+        // If none of the cases in there match,
+        // it means we are sitting on a token that can’t start an expression.
         throw error(peek(), "Expect expression.");
     }
 
+    /**
+     * This function just consumes the next token if it is of the expected type
+     * 
+     * @param type
+     * @param message
+     * @return
+     */
     private Token consume(TokenType type, String message) {
         if (check(type))
             return advance();
@@ -116,11 +146,58 @@ public class Parser{
         throw error(peek(), message);
     }
 
+    /**
+     * This function is used to report an error and return a ParseError exception
+     * 
+     * @param token
+     * @param message
+     * @return
+     */
     private ParseError error(Token token, String message) {
         App.error(token, message);
         return new ParseError();
     }
 
+    /**
+     * This function is used to synchronize the parser after an error
+     * with this i mean to discard tokens until
+     * we’re right at the beginning of the next statement.
+     * 
+     * @return
+     */
+    private void synchronize() {
+        advance();
+
+        while (!isAtEnd()) {
+            // Bc the the program just admit one statement per line
+            // we can assume that the next statement is at the beginning
+            // of the next line so we dont need to check a semicolon before
+            // if (previous().type == SEMICOLON)
+            // return;
+
+            switch (peek().type) {
+                // A sentence can start with any of these tokens
+                case CREATE:
+                case DROP:
+                case USE:
+                case SELECT:
+                case INSERT:
+                case UPDATE:
+                case DELETE:
+                    return;
+            }
+
+            advance();
+        }
+    }
+
+    /**
+     * This function is used to synchronize the parser after an error
+     * with this i mean that it will iterate tokens until it finds a statement
+     * 
+     * @param types
+     * @return
+     */
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
             if (check(type)) {

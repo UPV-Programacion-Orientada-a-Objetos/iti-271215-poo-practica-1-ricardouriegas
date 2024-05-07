@@ -6,12 +6,13 @@ enum TokenType {
     INT, VARCHAR, BOOLEAN, DATE, 
     
     // Data Definition (DDL)
-    CREATE, DROP,
+    CREATE, DROP, USE, 
     
     // Data Manipulation (DML)
     SELECT, INSERT, UPDATE, DELETE,
     
     // Keywords
+    // TODO: ADD NOT_NULL, and SET
     WHERE, FROM, ORDER_BY, LIMIT, VALUES, INTO, AND, OR, NOT, NULL,
     TRUE, FALSE, PRIMARY, KEY, DATABASE, TABLE, ASC, DESC,
 

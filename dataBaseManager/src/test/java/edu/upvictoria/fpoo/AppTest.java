@@ -1,6 +1,8 @@
 package edu.upvictoria.fpoo;
-
+// TODO: Agregar ejemplo para parser: CREATE TABLE alumnos (nombre STRING PRIMARY_KEY, edad NUMBER NOT_NULL, fecha_nacimiento DATE NULL);
 // import junit.framework.Test;
+
+// TODO: Testear la jerarquia de operacion
 import junit.framework.TestCase;
 // import junit.framework.TestSuite;
 

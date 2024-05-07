@@ -41,6 +41,7 @@ public class Lexer {
 
         keywords.put("CREATE", CREATE);
         keywords.put("DROP", DROP);
+        keywords.put("USE", USE);
 
         keywords.put("SELECT", SELECT);
         keywords.put("INSERT", INSERT);
@@ -59,6 +60,8 @@ public class Lexer {
         keywords.put("NULL", NULL);
         keywords.put("ASC", ASC);
         keywords.put("DESC", DESC);
+
+        // TODO: Agregar NOT_NULL
 
     }
 

@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
-
+// TODO: Validar en el interpreter que el numero de argumentos y valores en la insert clause sean iguales. e.g. insert no valido "INSERT INTO alumnos (nombre, edad) VALUES ('Juan', 20, 'Pedro', 21);"
 /**
  * Somthing i need to say:
  * I take order by has order_by (with the underscore)
@@ -36,10 +36,14 @@ public class App {
         Lexer lexer = new Lexer(source);
         List<Token> tokens = lexer.scanTokens();
 
-        // For now, just print the tokens.
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        Parser parser = new Parser(tokens);
+        Expression expression = parser.parse();
+
+        // Stop if there was a syntax error.
+        if (hadError)
+            return;
+
+        System.out.println(new AstPrinter().print(expression));
     }
 
     /**
@@ -67,10 +71,10 @@ public class App {
      * @param where
      * @param message
      */
-    private static void report(int line, String where,
-            String message) {
-        System.err.println(
-                "[line " + line + "] Error" + where + ": " + message);
+    private static void report(int line, String where, String message) {
         hadError = true;
+        throw new Error("[line " + line + "] Error" + where + ": " + message);
+        // System.err.println(
+        // "[line " + line + "] Error" + where + ": " + message);
     }
 }

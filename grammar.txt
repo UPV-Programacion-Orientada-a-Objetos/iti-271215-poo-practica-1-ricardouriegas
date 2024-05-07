@@ -1,69 +1,83 @@
 -- * means 0 or more
+-- + means 1 or more
 -- based on:
     https://teiid.github.io/teiid-documents/9.0.x/content/reference/BNF_for_SQL_Grammar.html
-<string>::= ALPHA (ALPHA | DIGIT)*
+    
+================================================================================
+
+== PRINCIPAL RULES ==
+<PROGRAM>::= (<SENTENCE> ;)+
+<SENTENCE>::= <USE_CLAUSE> | <DDL_CLAUSE> | <DML_CLAUSE>
+<USE_CLAUSE>::= USE <PATH>
+
+== DDL ==
+<DDL_CLAUSE>::= <CREATE_CLAUSE> | <DROP_CLAUSE>
+<CREATE_CLAUSE>::= CREATE TABLE <TABLE_NAME> OPEN_PAR <COLUMN_DEFINITION> (, <COLUMN_DEFINITION>)* CLOSE_PAR
+<COLUMN_DEFINITION>::= <COLUMN_NAME> <DATA_TYPE> <CONSTRAINT>*
+
+<DROP_CLAUSE>::= DROP TABLE <TABLE_NAME>
+
+== DML ==
+<DML_CLAUSE>::= <SELECT_CLAUSE> | <INSERT_CLAUSE> | <UPDATE_CLAUSE> | <DELETE_CLAUSE>
+-- "AS" NOT IMPLEMENTED ALREADY
+--  <GROUP_BY_CLAUSE>? NOT IMPLEMENTED ALREADY
+-- SELECT perro, gato FROM animales WHERE perro = 1 AND gato = 2 ORDER BY perro ASC LIMIT 10;
+<SELECT_CLAUSE>::= SELECT (STAR | <COLUMN_NAME> (, <COLUMN_NAME>)*) <FROM_CLAUSE> <WHERE_CLAUSE>? <ORDER_BY_CLAUSE>? <LIMIT_CLAUSE>?
+<FROM_CLAUSE>::= FROM <TABLE_NAME>
+<WHERE_CLAUSE>::= WHERE <EXPRESSION> 
+<EXPRESSION>::= <EQUALITY>
+-- WHERE alumno != 'PEDRO'
+<EQUALITY>::= <COMPARISION> (( "!=" | "==" ) <COMPARISION>)*
+<COMPARISION>::= <TERM> (( ">" | ">=" | "<" | "<=" ) <TERM>)*
+<TERM>::= <FACTOR> (( "-" | "+" ) <FACTOR>)*
+<FACTOR>::= <OPERAND> (( "/" | "*" ) <OPERAND>)*
+<OPERAND>::= <NUMBER> | <STRING> | TRUE | FALSE | NULL | NOT_NULL | "(" <EXPRESSION> ")"
+-- Implementar 'IS'
+-- Valido ahorita: 'WHERE ALUMNO == NULL OR APELLIDO != NOT_NULL'
+
+-- ORDER BY APELLIDO ASC, NOMBRE DESC
+<ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> <ORDER_TYPE> (, <COLUMN_NAME> <ORDER_TYPE>)*
+<ORDER_TYPE>::= ASC | DESC
+<LIMIT_CLAUSE>::= LIMIT <DIGIT> -- Se puede agregar keyword: ROWS
+
+-- INSERT INTO alumnos (nombre, apellido, fecha) VALUES ('Pedro', 'Perez', '12/12/2020');
+<INSERT_CLAUSE>::= INSERT INTO <TABLE_NAME> OPEN_PAR <COLUMN_NAME> (, <COLUMN_NAME>)*  CLOSE_PAR 
+                                            VALUES 
+                                            OPEN_PAR <VALUE> (, <VALUE>)* CLOSE_PAR
+-- UPDATE alumnos SET nombre = 'Pedro' WHERE id = 10;
+<UPDATE_CLAUSE>::= UPDATE <TABLE_NAME> SET <COLUMN_NAME> EQUAL <VALUE> <WHERE_CLAUSE>
+-- DELETE FROM alumnos WHERE id = 10;
+-- DELETE FROM alumnos;
+<DELETE_CLAUSE>::= DELETE FROM <TABLE_NAME> <WHERE_CLAUSE>?
+
+== DEFINITIONS ==
+-- TODO: Checar como se manejan los nombres de las variables y expresiones
+-- TODO: Checar String tiene que poder ser una fecha e.g. "12/12/2020"
+<PATH>::=  <DIRECTORY>
+<DIRECTORY>::= / (<DIRECTORY_NAME> /)*
+<DIRECTORY_NAME>::= <STRING>
+<TABLE_NAME>::= <STRING>
+<COLUMN_NAME>::= <STRING>
+<STRING>::= ALPHA (ALPHA | DIGIT)*
+<ALPHA>::= [a-zA-Z\_\-]
+<DIGIT>::= [0-9]
+<DATA_TYPE>::= NUMBER | STRING | DATE
+<VALUE>::= <STRING> | <DIGIT>
+-- TODO: Nueva definicion correcta de string e.g. 'Pedro' (mira las comillas)
+<CONSTRAINT>::= PRIMARY_KEY | NOT_NULL | UNIQUE | NULL
+
+
+
+
+
+
 <number>::= (0 ... 9)*
 <date>::= MM/DD/YYYY
+<value>::= <string> | <number> | <date>
+<operator>::= = | > | < | >= | <= | <>
+<ORDER_TYPE>::= ASC | DESC
+<EXPRESSION>::= <BOOLEAN_TERM> (OR <BOOELAN_TERM>)*
+<BOOELAN_TERM>::= <BOOLEAN_FACTOR> (AND <BOOLEAN_FACTOR>)*
+<BOOLEAN_FACTOR>::= (NOT)? <BOOLEAN_PRIMARY>
+<BOOLEAN_PRIMARY>
 
--- Operation symbols with precedence
-expression     := equality ;
-equality       := comparison ( ( "!=" | "==" ) comparison )* ;
-comparison     := term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-term           := factor ( ( "-" | "+" ) factor )* ;
-factor         := unary ( ( "/" | "*" ) unary )* ;
-unary          := ( "!" | "-" ) unary
-               | primary ;
-primary        := NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")" ;
-
--- Define a program
-<PROGRAM> := <USE_CLAUSE> <DDL_CLAUSES> <DML_CLAUSES>
-
--- Define a DDL clauses
-<DDL_CLAUSES> := <CREATE_CLAUSE> | <DROP_CLAUSE>
-
--- Define a DML clauses
-<DML_CLAUSES> := <SELECT_CLAUSE> | <INSERT_CLAUSE> | <UPDATE_CLAUSE> | <DELETE_CLAUSE>
-
-
-==Util==
-<USE_CLAUSE>::= USE <path> ;
-<path>::=  <directory> / <database_name>  
-<directory>::= / (<directory_name>)*
-<directory_name>::= <string>
-<database_name>::= <string>
-
-
-==Definition==
-<table_name>::= <string> ;
-<CREATE_CLAUSE>::= CREATE TABLE <table_name> OPEN_PAR <column_definition> (<column_definition>)* CLOSE_PAR
-    <column_definition>::= <column_name> <data_type> <constraint>*
-        <column_name>::= <string>
-        <data_type>::= NUMBER | STRING | DATE
-        <constraint>::= PRIMARY KEY | NOT NULL | UNIQUE | NULL
-
-<DROP_CLAUSE>::= DROP TABLE <table_name>
-
-
-==Manipulation==
-<SELECT_CLAUSE>::= SELECT { ASTERISK | <column_name> [, <column_name> (AS <alias>)?]*} 
-            FROM <table_name> 
-            <WHERE_CLAUSE>? (AND | OR <WHERE_CLAUSE>)*
-            <GROUP_BY_CLAUSE>?  
-            <ORDER_BY_CLAUSE>? 
-            <LIMIT_CLAUSE>? ;
-
-    <WHERE_CLAUSE>::= WHERE <column_name> <operator> <value>
-        <operator>::= = | > | < | >= | <= | <>
-    <ORDER_BY_CLAUSE>::= ORDER BY <column_name> <ORDER_TYPE>? -- Se puede ordenar por mas de una columna?
-        <ORDER_TYPE>::= ASC | DESC 
-    <LIMIT_CLAUSE>::= LIMIT <number>
-    <GROUP_BY_CLAUSE>::= GROUP BY <column_name>
-    
-<INSERT_CLAUSE>::= INSERT INTO <table_name> OPEN_PAR <column_name> (, <column_name>)*  CLOSE_PAR 
-                                            VALUES 
-                                            OPEN_PAR <value> (, <value>)* CLOSE_PAR ;
-    <value>::= <string> | <number> | <date>
-
-<UPDATE_CLAUSE>::= UPDATE <table_name> SET <column_name> = <value> <WHERE_CLAUSE>;
-<DELETE_CLAUSE>::= DELETE FROM <table_name> <WHERE_CLAUSE>;
