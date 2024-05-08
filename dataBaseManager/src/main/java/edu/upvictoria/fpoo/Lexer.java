@@ -34,8 +34,8 @@ public class Lexer {
 
         keywords.put("TRUE", TRUE);
         keywords.put("FALSE", FALSE);
-        keywords.put("PRIMARY", PRIMARY);
-        keywords.put("KEY", KEY);
+        keywords.put("PRIMARY_KEY", PRIMARY_KEY);
+        keywords.put("UNIQUE", UNIQUE);
         keywords.put("DATABASE", DATABASE);
         keywords.put("TABLE", TABLE);
 
@@ -60,9 +60,8 @@ public class Lexer {
         keywords.put("NULL", NULL);
         keywords.put("ASC", ASC);
         keywords.put("DESC", DESC);
-
-        // TODO: Agregar NOT_NULL
-
+        keywords.put("NOT_NULL", NOT_NULL);
+        keywords.put("SET", SET);
     }
 
     /**
@@ -70,7 +69,7 @@ public class Lexer {
      * @param query
      */
     Lexer(String query) {
-        this.query = query.toUpperCase();        
+        this.query = query;
     }
 
     /**
@@ -120,7 +119,7 @@ public class Lexer {
                 addToken(SLASH);
                 break;
             case '*': // an asterisk can mean ALL if theres not a number after
-                
+                addToken(STAR);
                 break;
             case ';':
                 addToken(SEMICOLON);
@@ -148,6 +147,9 @@ public class Lexer {
             case '"':
                 string();
                 break;
+            case '\'':
+                string();
+                break;
             default:
                 if (isDigit(c)) {
                     number();
@@ -170,7 +172,7 @@ public class Lexer {
 
         // see if it matches anything in the map
         String text = query.substring(start, current);
-        TokenType type = keywords.get(text);
+        TokenType type = keywords.get(text.toUpperCase());
         
         if (type == null)
             type = IDENTIFIER;
@@ -222,6 +224,30 @@ public class Lexer {
                 Double.parseDouble(query.substring(start, current)));
     }
 
+    
+    /**
+     * string() method will scan the string
+     */
+    private void string() {
+        while (peek() != '"' && !isAtEnd()) {
+            if (peek() == '\n')
+                line++;
+            advance();
+        }
+        
+        if (isAtEnd()) {
+            App.error(line, "Unterminated string.");
+            return;
+        }
+        
+        // The closing ".
+        advance();
+        
+        // Trim the surrounding quotes.
+        String value = query.substring(start + 1, current - 1);
+        addToken(STRING, value);
+    }
+    
     /**
      * Method used to peek the next character (if there is one)
      * 
@@ -232,30 +258,7 @@ public class Lexer {
             return '\0';
         return query.charAt(current + 1);
     }
-
-    /**
-     * string() method will scan the string
-     */
-    private void string() {
-        while (peek() != '"' && !isAtEnd()) {
-            if (peek() == '\n')
-                line++;
-            advance();
-        }
-
-        if (isAtEnd()) {
-            App.error(line, "Unterminated string.");
-            return;
-        }
-
-        // The closing ".
-        advance();
-
-        // Trim the surrounding quotes.
-        String value = query.substring(start + 1, current - 1);
-        addToken(STRING, value);
-    }
-
+    
     /**
      * Look ahead to see if the current character is a digit
      * 
@@ -309,6 +312,11 @@ public class Lexer {
      */
     private void addToken(TokenType type, Object literal) {
         String text = query.substring(start, current);
+
+        // the strings are not uppercase
+        if (type != STRING)
+            text = text.toUpperCase();
+
         tokens.add(new Token(type, text, literal, line));
     }
 

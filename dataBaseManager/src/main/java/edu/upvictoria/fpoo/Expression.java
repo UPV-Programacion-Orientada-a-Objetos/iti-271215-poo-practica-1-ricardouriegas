@@ -16,13 +16,10 @@ import java.util.List;
  */
 abstract class Expression {
   interface Visitor<R> {
-    R visitBinaryExpression(Binary expression);
-
-    R visitGroupingExpression(Grouping expression);
-
-    R visitLiteralExpression(Literal expression);
-
-    R visitUnaryExpression(Unary expression);
+    R visitBinaryExpression(Binary expr);
+    R visitGroupingExpression(Grouping expr);
+    R visitLiteralExpression(Literal expr);
+    R visitUnaryExpression(Unary expr);
   }
 
   static class Binary extends Expression {

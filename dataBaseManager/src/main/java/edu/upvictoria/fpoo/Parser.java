@@ -13,7 +13,6 @@ import static edu.upvictoria.fpoo.TokenType.*;
  * about their mistakes.
  */
 public class Parser {
-
     static class ParseError extends RuntimeException {
         // This is a simple sentinel class used to unwind the parser
     }
@@ -26,112 +25,58 @@ public class Parser {
     }
 
     // The parser
-    Expression parse() {
+    Clause parse() {
         try {
-            return expression();
+            return program();
         } catch (ParseError error) {
-            // The parser promises not to crash or hang on invalid syntax, 
-            // but it doesn’t promise to return a usable syntax tree 
+            // The parser promises not to crash or hang on invalid syntax,
+            // but it doesn’t promise to return a usable syntax tree
             // if an error is found of course
             return null;
         }
     }
 
-    // program := statement* EOF ;
-    private Expression expression() {
-        return equality();
+    // <PROGRAM>::= <SENTENCE> ;
+    private Clause program() {
+        Clause expression = sentence();
+        consume(SEMICOLON, "Expected ; of statement.");
+        return expression;
     }
 
-    // equality := comparison ( ( "!=" | "==" ) comparison )* ;
-    private Expression equality() {
-        Expression expr = comparison();
+    // <SENTENCE>::= <USE_CLAUSE> | <CREATE_CLAUSE> | <DROP_CLAUSE> | <SELECT_CLAUSE> | <INSERT_CLAUSE> | <UPDATE_CLAUSE> | <DELETE_CLAUSE>
+    private Clause sentence() {
+        if (match(USE))
+            return useClause();
+        // if (match(CREATE))
+        //     return ddlClause();
+        // if (match(DROP))
+        //     return ddlClause();
+        // if (match(SELECT))
+        //     return dmlClause();
+        // if (match(INSERT))
+        //     return dmlClause();
+        // if (match(UPDATE))
+        //     return dmlClause();
+        // if (match(DELETE))
+        //     return dmlClause();
 
-        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
-            Token operator = previous();
-            Expression right = comparison();
-            expr = new Expression.Binary(expr, operator, right);
-        }
-
-        return expr;
+        throw error(peek(), "Expected statement.");
     }
 
-    // comparison := term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    private Expression comparison() {
-        Expression expr = term();
-
-        while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
-            Token operator = previous();
-            Expression right = term();
-            expr = new Expression.Binary(expr, operator, right);
-        }
-
-        return expr;
+    // <USE_CLAUSE>::= USE <PATH>
+    // <PATH>::= <STRING>
+    private Clause useClause() {
+        consume(USE, "Expected keyword USE  at the beginning.");
+        Token path = consume(STRING, "Expected path to database.");
+        return new Clause.UseClause(path.lexeme);
     }
 
-    // term := factor ( ( "-" | "+" ) factor )* ;
-    private Expression term() {
-        Expression expr = factor();
 
-        while (match(MINUS, PLUS)) {
-            Token operator = previous();
-            Expression right = factor();
-            expr = new Expression.Binary(expr, operator, right);
-        }
-
-        return expr;
-    }
-
-    // factor := unary ( ( "/" | "*" ) unary )* ;
-    private Expression factor() {
-        Expression expr = unary();
-
-        while (match(SLASH, STAR)) {
-            Token operator = previous();
-            Expression right = unary();
-            expr = new Expression.Binary(expr, operator, right);
-        }
-
-        return expr;
-    }
-
-    // unary := ( "!" | "-" ) unary
-    // | primary ;
-    private Expression unary() {
-        if (match(BANG, MINUS)) {
-            Token operator = previous();
-            Expression right = unary();
-            return new Expression.Unary(operator, right);
-        }
-
-        return primary();
-    }
-
-    // primary := NUMBER | STRING | "true" | "false" | "nil"
-    // | "(" expression ")" ;
-    private Expression primary() {
-        if (match(NUMBER, STRING))
-            return new Expression.Literal(previous().literal);
-
-        if (match(TRUE))
-            return new Expression.Literal(true);
-
-        if (match(FALSE))
-            return new Expression.Literal(false);
-
-        if (match(NULL))
-            return new Expression.Literal(null);
-
-        if (match(LEFT_PAREN)) {
-            Expression expr = expression();
-            consume(RIGHT_PAREN, "Expect ')' after expression.");
-            return new Expression.Grouping(expr);
-        }
-
-        // If none of the cases in there match,
-        // it means we are sitting on a token that can’t start an expression.
-        throw error(peek(), "Expect expression.");
-    }
-
+    /**
+     * ************************************************************
+     * Down here are the functions that are utilities
+     * ************************************************************
+     */
     /**
      * This function just consumes the next token if it is of the expected type
      * 
@@ -156,39 +101,6 @@ public class Parser {
     private ParseError error(Token token, String message) {
         App.error(token, message);
         return new ParseError();
-    }
-
-    /**
-     * This function is used to synchronize the parser after an error
-     * with this i mean to discard tokens until
-     * we’re right at the beginning of the next statement.
-     * 
-     * @return
-     */
-    private void synchronize() {
-        advance();
-
-        while (!isAtEnd()) {
-            // Bc the the program just admit one statement per line
-            // we can assume that the next statement is at the beginning
-            // of the next line so we dont need to check a semicolon before
-            // if (previous().type == SEMICOLON)
-            // return;
-
-            switch (peek().type) {
-                // A sentence can start with any of these tokens
-                case CREATE:
-                case DROP:
-                case USE:
-                case SELECT:
-                case INSERT:
-                case UPDATE:
-                case DELETE:
-                    return;
-            }
-
-            advance();
-        }
     }
 
     /**

@@ -12,7 +12,7 @@ public class LexerTest {
      */
     @Test
     public void testScanTokens() {
-        Lexer lexer = new Lexer("SELECT * FROM table;");
+        Lexer lexer = new Lexer("SELECT * from table;");
         List<Token> tokens = lexer.scanTokens();
         // System.out.println(tokens);
         // Expected:
@@ -21,6 +21,8 @@ public class LexerTest {
         List<Token> expected = new ArrayList<>();
         expected.add(
                 new Token(SELECT, "SELECT", null, 1));
+        expected.add(
+                new Token(STAR, "*", null, 1));
         expected.add(
                 new Token(FROM, "FROM", null, 1));
         expected.add(
@@ -44,7 +46,7 @@ public class LexerTest {
     @Test
     public void testScanTokens2() {
         Lexer lexer = new Lexer(
-                "CREATE TABLE Alumnos (id INT NOT NULL PRIMARY KEY, nombre VARCHAR(20) NOT NULL, app VARCHAR(20) NOT NULL, apm VARCHAR(20) NOT NULL, edad INT NULL);");
+                "CREATE TABLE Alumnos (id INT NOT NULL PRIMARY_KEY, nombre VARCHAR(20) NOT NULL, app VARCHAR(20) NOT NULL, apm VARCHAR(20) NOT NULL, edad INT NULL);");
         List<Token> tokens = lexer.scanTokens();
 
         /**
@@ -75,9 +77,7 @@ public class LexerTest {
         expected.add(
                 new Token(NULL, "NULL", null, 1));
         expected.add(
-                new Token(PRIMARY, "PRIMARY", null, 1));
-        expected.add(
-                new Token(KEY, "KEY", null, 1));
+                new Token(PRIMARY_KEY, "PRIMARY_KEY", null, 1));
         expected.add(
                 new Token(COMMA, ",", null, 1));
         expected.add(
@@ -167,7 +167,7 @@ public class LexerTest {
         expected.add(
                 new Token(FROM, "FROM", null, 1));
         expected.add(
-                new Token(IDENTIFIER, "TABLE", null, 1));
+                new Token(TABLE, "TABLE", null, 1));
         expected.add(
                 new Token(WHERE, "WHERE", null, 1));
         expected.add(
@@ -250,7 +250,7 @@ public class LexerTest {
         expected.add(
                 new Token(EQUAL, "=", null, 1));
         expected.add(
-                new Token(STRING, "\"ENGINEERING\"", "ENGINEERING", 1));
+                new Token(STRING, "\"Engineering\"", "Engineering", 1));
         expected.add(
                 new Token(ORDER_BY, "ORDER_BY", null, 1));
         expected.add(
@@ -276,6 +276,20 @@ public class LexerTest {
             assertEquals(expected.get(i).line, tokens.get(i).line);
         }
 
+    }
+
+    @Test
+    public void testParse() {
+        // use without doble quotes
+        String source = "USE /home/username/database\";";
+        Lexer lexer = new Lexer(source);
+        try {
+            lexer.scanTokens();
+        } catch (Exception e) {
+                // assertEquals("Unterminated string.", e.getMessage());
+                // expected error
+                
+        }
     }
 
 }

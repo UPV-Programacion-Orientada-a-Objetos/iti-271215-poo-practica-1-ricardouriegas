@@ -33,17 +33,24 @@ public class App {
     }
 
     private static void run(String source) {
+        // Tokenize
         Lexer lexer = new Lexer(source);
         List<Token> tokens = lexer.scanTokens();
 
+        // Parse
         Parser parser = new Parser(tokens);
-        Expression expression = parser.parse();
+        Clause expression = parser.parse();
+
+        // Interpret
+        Interpreter interpreter = new Interpreter();
+        interpreter.interpret(expression);
 
         // Stop if there was a syntax error.
         if (hadError)
             return;
 
-        System.out.println(new AstPrinter().print(expression));
+        System.out.println(expression);
+        // System.out.println(new AstPrinter().print(expression));
     }
 
     /**
