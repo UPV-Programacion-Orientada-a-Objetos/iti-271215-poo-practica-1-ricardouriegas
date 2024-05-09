@@ -28,7 +28,7 @@
 <COMPARISION>::= <TERM> (( ">" | ">=" | "<" | "<=" ) <TERM>)*
 <TERM>::= <FACTOR> (( "-" | "+" ) <FACTOR>)*
 <FACTOR>::= <OPERAND> (( "/" | "*" ) <OPERAND>)*
-<OPERAND>::= <NUMBER> | <STRING> | TRUE | FALSE | NULL | NOT_NULL | "(" <EXPRESSION> ")"
+<OPERAND>::= <NUMBER> | <STRING> | TRUE | FALSE | NULL | NOT_NULL | IDENTIFIER | "(" <EXPRESSION> ")"
 -- TODO: Implementar 'IS'
 -- Valido ahorita que no existe 'IS': 'WHERE ALUMNO == NULL OR APELLIDO != NOT_NULL'
 
@@ -57,7 +57,7 @@
 <STRING>::= \" ALPHA (ALPHA | DIGIT)* \"
 <ALPHA>::= [a-zA-Z\_\-]
 <DIGIT>::= [0-9]
-<DATA_TYPE>::= NUMBER | STRING | DATE
+<DATA_TYPE>::= NUMBER | STRING | DATE | VARCHAR | BOOLEAN
 <VALUE>::= <STRING> | <DIGIT> 
 <CONSTRAINT>::= PRIMARY_KEY | NOT_NULL | UNIQUE | NULL
 

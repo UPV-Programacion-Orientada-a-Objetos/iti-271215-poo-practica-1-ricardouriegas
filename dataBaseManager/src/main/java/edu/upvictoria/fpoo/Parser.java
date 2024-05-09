@@ -1,43 +1,6 @@
 package edu.upvictoria.fpoo;
 
-import static edu.upvictoria.fpoo.TokenType.AND;
-import static edu.upvictoria.fpoo.TokenType.ASC;
-import static edu.upvictoria.fpoo.TokenType.BANG_EQUAL;
-import static edu.upvictoria.fpoo.TokenType.COMMA;
-import static edu.upvictoria.fpoo.TokenType.CREATE;
-import static edu.upvictoria.fpoo.TokenType.DATE;
-import static edu.upvictoria.fpoo.TokenType.DESC;
-import static edu.upvictoria.fpoo.TokenType.DROP;
-import static edu.upvictoria.fpoo.TokenType.EOS;
-import static edu.upvictoria.fpoo.TokenType.EQUAL_EQUAL;
-import static edu.upvictoria.fpoo.TokenType.FALSE;
-import static edu.upvictoria.fpoo.TokenType.FROM;
-import static edu.upvictoria.fpoo.TokenType.GREATER;
-import static edu.upvictoria.fpoo.TokenType.GREATER_EQUAL;
-import static edu.upvictoria.fpoo.TokenType.IDENTIFIER;
-import static edu.upvictoria.fpoo.TokenType.LEFT_PAREN;
-import static edu.upvictoria.fpoo.TokenType.LESS;
-import static edu.upvictoria.fpoo.TokenType.LESS_EQUAL;
-import static edu.upvictoria.fpoo.TokenType.LIMIT;
-import static edu.upvictoria.fpoo.TokenType.MINUS;
-import static edu.upvictoria.fpoo.TokenType.NOT_NULL;
-import static edu.upvictoria.fpoo.TokenType.NULL;
-import static edu.upvictoria.fpoo.TokenType.NUMBER;
-import static edu.upvictoria.fpoo.TokenType.OR;
-import static edu.upvictoria.fpoo.TokenType.ORDER_BY;
-import static edu.upvictoria.fpoo.TokenType.PLUS;
-import static edu.upvictoria.fpoo.TokenType.PRIMARY_KEY;
-import static edu.upvictoria.fpoo.TokenType.RIGHT_PAREN;
-import static edu.upvictoria.fpoo.TokenType.SELECT;
-import static edu.upvictoria.fpoo.TokenType.SEMICOLON;
-import static edu.upvictoria.fpoo.TokenType.SLASH;
-import static edu.upvictoria.fpoo.TokenType.STAR;
-import static edu.upvictoria.fpoo.TokenType.STRING;
-import static edu.upvictoria.fpoo.TokenType.TABLE;
-import static edu.upvictoria.fpoo.TokenType.TRUE;
-import static edu.upvictoria.fpoo.TokenType.UNIQUE;
-import static edu.upvictoria.fpoo.TokenType.USE;
-import static edu.upvictoria.fpoo.TokenType.WHERE;
+import static edu.upvictoria.fpoo.TokenType.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -152,7 +115,7 @@ public class Parser {
         return constraints;
     }
 
-    // <DATA_TYPE>::= NUMBER | STRING | DATE
+    // <DATA_TYPE>::= NUMBER | STRING | DATE | VARCHAR | BOOLEAN
     private String dataType() {
         if (match(NUMBER))
             return "NUMBER";
@@ -160,6 +123,10 @@ public class Parser {
             return "STRING";
         if (match(DATE))
             return "DATE";
+        if (match(VARCHAR))
+            return "VARCHAR";
+        if (match(BOOLEAN))
+            return "BOOLEAN";
 
         throw error(peek(), "Expected data type.");
     }
@@ -194,7 +161,7 @@ public class Parser {
     /**************************************************************************/
     // <SELECT_CLAUSE>::= SELECT (STAR | <COLUMN_NAME> (, <COLUMN_NAME>)*)
     // <FROM_CLAUSE> <WHERE_CLAUSE>? <ORDER_BY_CLAUSE>? <LIMIT_CLAUSE>?
-    //// <FROM_CLAUSE>::= FROM <TABLE_NAME>
+    // <FROM_CLAUSE>::= FROM <TABLE_NAME>
     private Clause selectClause() {
         if (match(STAR)) {
             consume(FROM, "Expected keyword FROM after SELECT *.");
@@ -219,6 +186,8 @@ public class Parser {
             if (match(LIMIT)) {
                 limit = limitClause();
             }
+
+            return new Clause.SelectClause(new ArrayList<>(), table_name, where_expression, columns_order, limit);
         }
 
         // stills the select clause
@@ -243,7 +212,6 @@ public class Parser {
 
         // order by clause
         if (match(ORDER_BY)) {
-            consume(IDENTIFIER, "Expected column name.");
             columns_order = orderBy();
         }
 
@@ -294,10 +262,12 @@ public class Parser {
     // <COMPARISION>::= <TERM> (( ">" | ">=" | "<" | "<=" ) <TERM>)*
     private Expression comparision() {
         Expression left = term();
+
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
             Expression right = term();
             left = new Expression.Binary(left, previous(), right);
         }
+
         return left;
     }
 
@@ -321,28 +291,31 @@ public class Parser {
         return left;
     }
 
-    // <OPERAND>::= <NUMBER> | <STRING> | TRUE | FALSE | NULL | NOT_NULL | "("
-    // <EXPRESSION> ")"
+    // <OPERAND>::= <NUMBER> | <STRING> | TRUE | FALSE | NULL | NOT_NULL |
+    // IDENTIFIER | "(" <EXPRESSION> ")"
     private Expression operand() {
-        if (match(NUMBER, STRING, TRUE, FALSE, NULL, NOT_NULL)) {
+        if (match(NUMBER, STRING, TRUE, FALSE, NULL, NOT_NULL, IDENTIFIER)) {
             return new Expression.Literal(previous().literal);
         }
+
         if (match(LEFT_PAREN)) {
             Expression expression = expression();
             consume(RIGHT_PAREN, "Expected ) after expression.");
             return new Expression.Grouping(expression);
         }
+
         throw error(peek(), "Expected operand.");
     }
+
 
     // <ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> (, <COLUMN_NAME> )* <ORDER_TYPE>?
     private List<String> orderBy() {
         List<String> columns = new ArrayList<>();
-        consume(COMMA, "Missed coma");
-        columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
-
+        columns.add(consume(IDENTIFIER, "Expected column name after ORDER_BY keyword.").lexeme);
+        
         while (match(COMMA)) {
-            columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
+            //// consume(COMMA, "Missed coma");
+            columns.add(consume(IDENTIFIER, "Expected column name in ORDER_BY.").lexeme);
         }
 
         if (orderType()) {

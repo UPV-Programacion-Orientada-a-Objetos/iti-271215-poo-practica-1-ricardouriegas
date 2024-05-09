@@ -46,7 +46,7 @@ public class LexerTest {
     @Test
     public void testScanTokens2() {
         Lexer lexer = new Lexer(
-                "CREATE TABLE Alumnos (id INT NOT NULL PRIMARY_KEY, nombre VARCHAR(20) NOT NULL, app VARCHAR(20) NOT NULL, apm VARCHAR(20) NOT NULL, edad INT NULL);");
+                "CREATE TABLE Alumnos (id INT NOT_NULL PRIMARY_KEY, nombre VARCHAR(20) NOT NULL, app VARCHAR(20) NOT NULL, apm VARCHAR(20) NOT NULL, edad INT NULL);");
         List<Token> tokens = lexer.scanTokens();
 
         /**
@@ -73,9 +73,7 @@ public class LexerTest {
         expected.add(
                 new Token(INT, "INT", null, 1));
         expected.add(
-                new Token(NOT, "NOT", null, 1));
-        expected.add(
-                new Token(NULL, "NULL", null, 1));
+                new Token(NOT_NULL, "NOT_NULL", null, 1));
         expected.add(
                 new Token(PRIMARY_KEY, "PRIMARY_KEY", null, 1));
         expected.add(
