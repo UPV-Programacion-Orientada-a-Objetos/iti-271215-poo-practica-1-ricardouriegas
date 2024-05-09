@@ -27,7 +27,12 @@ public class App {
             String line = reader.readLine();
             if (line == null)
                 break;
-            run(line);
+            try{
+                run(line);
+            } catch (Error e) {
+                System.err.println(e.getMessage());
+            }
+            
             hadError = false;
         }
     }
@@ -42,8 +47,8 @@ public class App {
         Clause expression = parser.parse();
 
         // Interpret
-        Interpreter interpreter = new Interpreter();
-        interpreter.interpret(expression);
+        // Interpreter interpreter = new Interpreter();
+        // interpreter.interpret(expression);
 
         // Stop if there was a syntax error.
         if (hadError)
@@ -52,6 +57,7 @@ public class App {
         System.out.println(expression);
         // System.out.println(new AstPrinter().print(expression));
     }
+    
 
     /**
      * This method will report an error

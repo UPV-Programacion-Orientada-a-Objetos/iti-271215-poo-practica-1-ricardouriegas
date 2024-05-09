@@ -21,21 +21,21 @@
 -- SELECT perro, gato FROM animales WHERE perro = 1 AND gato = 2 ORDER BY perro ASC LIMIT 10;
 <SELECT_CLAUSE>::= SELECT (STAR | <COLUMN_NAME> (, <COLUMN_NAME>)*) <FROM_CLAUSE> <WHERE_CLAUSE>? <ORDER_BY_CLAUSE>? <LIMIT_CLAUSE>?
 <FROM_CLAUSE>::= FROM <TABLE_NAME>
-<WHERE_CLAUSE>::= WHERE <EXPRESSION> (AND <EXPRESSION> | OR <EXPRESSION>)*
-<EXPRESSION>::= <EQUALITY>
--- WHERE alumno != 'PEDRO'
+<WHERE_CLAUSE>::= WHERE <EXPRESSION> 
+<EXPRESSION>::= <EQUALITY_LEFT> (OR <EQUALITY_LEFT>)*
+<EQUALITY_LEFT>::= <EQUALITY> (AND <EQUALITY>)*
 <EQUALITY>::= <COMPARISION> (( "!=" | "==" ) <COMPARISION>)*
 <COMPARISION>::= <TERM> (( ">" | ">=" | "<" | "<=" ) <TERM>)*
 <TERM>::= <FACTOR> (( "-" | "+" ) <FACTOR>)*
 <FACTOR>::= <OPERAND> (( "/" | "*" ) <OPERAND>)*
 <OPERAND>::= <NUMBER> | <STRING> | TRUE | FALSE | NULL | NOT_NULL | "(" <EXPRESSION> ")"
--- Implementar 'IS'
--- Valido ahorita: 'WHERE ALUMNO == NULL OR APELLIDO != NOT_NULL'
+-- TODO: Implementar 'IS'
+-- Valido ahorita que no existe 'IS': 'WHERE ALUMNO == NULL OR APELLIDO != NOT_NULL'
 
--- ORDER BY APELLIDO ASC, NOMBRE DESC
-<ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> <ORDER_TYPE> (, <COLUMN_NAME> <ORDER_TYPE>)*
+
+<ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> (, <COLUMN_NAME> )* <ORDER_TYPE>? -- TODO: Implementar ASC y DESC for each column
 <ORDER_TYPE>::= ASC | DESC
-<LIMIT_CLAUSE>::= LIMIT <DIGIT> -- Se puede agregar keyword: ROWS
+<LIMIT_CLAUSE>::= LIMIT <DIGIT> -- TODO: Se puede agregar keyword: ROWS, asi que abria que implementarlo
 
 -- INSERT INTO alumnos (nombre, apellido, fecha) VALUES ('Pedro', 'Perez', '12/12/2020');
 <INSERT_CLAUSE>::= INSERT INTO <TABLE_NAME> OPEN_PAR <COLUMN_NAME> (, <COLUMN_NAME>)*  CLOSE_PAR 
@@ -53,7 +53,7 @@
 -- A date is written with ', but the strings are with "
 <PATH>::= <STRING>
 <TABLE_NAME>::= <STRING>
-<COLUMN_NAME>::= <STRING>
+<COLUMN_NAME>::= ALPHA (ALPHA | DIGIT)*
 <STRING>::= \" ALPHA (ALPHA | DIGIT)* \"
 <ALPHA>::= [a-zA-Z\_\-]
 <DIGIT>::= [0-9]
