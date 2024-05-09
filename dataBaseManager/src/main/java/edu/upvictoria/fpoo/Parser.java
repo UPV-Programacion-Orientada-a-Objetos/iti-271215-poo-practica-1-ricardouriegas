@@ -1,10 +1,47 @@
 package edu.upvictoria.fpoo;
 
+import static edu.upvictoria.fpoo.TokenType.AND;
+import static edu.upvictoria.fpoo.TokenType.ASC;
+import static edu.upvictoria.fpoo.TokenType.BANG_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.COMMA;
+import static edu.upvictoria.fpoo.TokenType.CREATE;
+import static edu.upvictoria.fpoo.TokenType.DATE;
+import static edu.upvictoria.fpoo.TokenType.DESC;
+import static edu.upvictoria.fpoo.TokenType.DROP;
+import static edu.upvictoria.fpoo.TokenType.EOS;
+import static edu.upvictoria.fpoo.TokenType.EQUAL_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.FALSE;
+import static edu.upvictoria.fpoo.TokenType.FROM;
+import static edu.upvictoria.fpoo.TokenType.GREATER;
+import static edu.upvictoria.fpoo.TokenType.GREATER_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.IDENTIFIER;
+import static edu.upvictoria.fpoo.TokenType.LEFT_PAREN;
+import static edu.upvictoria.fpoo.TokenType.LESS;
+import static edu.upvictoria.fpoo.TokenType.LESS_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.LIMIT;
+import static edu.upvictoria.fpoo.TokenType.MINUS;
+import static edu.upvictoria.fpoo.TokenType.NOT_NULL;
+import static edu.upvictoria.fpoo.TokenType.NULL;
+import static edu.upvictoria.fpoo.TokenType.NUMBER;
+import static edu.upvictoria.fpoo.TokenType.OR;
+import static edu.upvictoria.fpoo.TokenType.ORDER_BY;
+import static edu.upvictoria.fpoo.TokenType.PLUS;
+import static edu.upvictoria.fpoo.TokenType.PRIMARY_KEY;
+import static edu.upvictoria.fpoo.TokenType.RIGHT_PAREN;
+import static edu.upvictoria.fpoo.TokenType.SELECT;
+import static edu.upvictoria.fpoo.TokenType.SEMICOLON;
+import static edu.upvictoria.fpoo.TokenType.SLASH;
+import static edu.upvictoria.fpoo.TokenType.STAR;
+import static edu.upvictoria.fpoo.TokenType.STRING;
+import static edu.upvictoria.fpoo.TokenType.TABLE;
+import static edu.upvictoria.fpoo.TokenType.TRUE;
+import static edu.upvictoria.fpoo.TokenType.UNIQUE;
+import static edu.upvictoria.fpoo.TokenType.USE;
+import static edu.upvictoria.fpoo.TokenType.WHERE;
+
 import java.util.ArrayList;
 import java.util.List;
-import static java.lang.Integer.parseInt;
-
-import static edu.upvictoria.fpoo.TokenType.*;
+// import static java.lang.Integer.parseInt;
 
 /**
  * A parser really has two jobs:
@@ -27,14 +64,14 @@ public class Parser {
     }
 
     // The parser
-    Clause parse() {
+    public Clause parse() {
         try {
             return program();
         } catch (ParseError error) {
             // The parser promises not to crash or hang on invalid syntax,
             // but it doesn’t promise to return a usable syntax tree
             // if an error is found of course
-            Synchronize();
+            synchronize();
             return null;
         }
     }
@@ -45,7 +82,7 @@ public class Parser {
         consume(SEMICOLON, "Expected ; of statement.");
         return expression;
     }
-
+    
     // <SENTENCE>::= <USE_CLAUSE> | <CREATE_CLAUSE> | <DROP_CLAUSE> |
     // <SELECT_CLAUSE> | <INSERT_CLAUSE> | <UPDATE_CLAUSE> | <DELETE_CLAUSE>
     private Clause sentence() {
@@ -67,7 +104,6 @@ public class Parser {
     // <USE_CLAUSE>::= USE <PATH>
     // <PATH>::= <STRING>
     private Clause useClause() {
-        consume(USE, "Expected keyword USE  at the beginning.");
         Token path = consume(STRING, "Expected path to database.");
         return new Clause.UseClause(path.lexeme);
     }
@@ -81,7 +117,6 @@ public class Parser {
     // <TABLE_NAME>::= <STRING>
     // <COLUMN_NAME>::= ALPHA (ALPHA | DIGIT)*
     private Clause createClause() {
-        consume(CREATE, "Expected keyword CREATE at the beginning.");
         consume(TABLE, "Expected keyword TABLE after CREATE.");
         Token name = consume(IDENTIFIER, "Expected table name.");
         consume(LEFT_PAREN, "Expected ( after table name.");
@@ -149,7 +184,6 @@ public class Parser {
     // <DROP_CLAUSE>::= DROP TABLE <TABLE_NAME>
     // <TABLE_NAME>::= <STRING>
     private Clause dropClause() {
-        consume(DROP, "Expected keyword DROP at the beginning.");
         consume(TABLE, "Expected keyword TABLE after DROP.");
         Token name = consume(IDENTIFIER, "Expected table name.");
         return new Clause.DropClause(name.lexeme);
@@ -162,7 +196,6 @@ public class Parser {
     // <FROM_CLAUSE> <WHERE_CLAUSE>? <ORDER_BY_CLAUSE>? <LIMIT_CLAUSE>?
     //// <FROM_CLAUSE>::= FROM <TABLE_NAME>
     private Clause selectClause() {
-        consume(SELECT, "Expected keyword SELECT at the beginning.");
         if (match(STAR)) {
             consume(FROM, "Expected keyword FROM after SELECT *.");
             String table_name = consume(IDENTIFIER, "Expected table name.").lexeme;
@@ -224,10 +257,10 @@ public class Parser {
 
     // <WHERE_CLAUSE>::= WHERE <EXPRESSION>
     private Expression whereClause() {
-        consume(WHERE, "Expected keyword WHERE at the beginning.");
         return expression();
     }
 
+    
     // <EXPRESSION>::= <EQUALITY_LEFT> (OR <EQUALITY_LEFT>)*
     private Expression expression() {
         Expression left = equalityLeft();
@@ -305,6 +338,7 @@ public class Parser {
     // <ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> (, <COLUMN_NAME> )* <ORDER_TYPE>?
     private List<String> orderBy() {
         List<String> columns = new ArrayList<>();
+        consume(COMMA, "Missed coma");
         columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
 
         while (match(COMMA)) {
@@ -328,7 +362,7 @@ public class Parser {
 
     // <LIMIT_CLAUSE>::= LIMIT <DIGIT> -- Se puede agregar keyword: ROWS
     private int limitClause() {
-        return (int) consume(NUMBER, "Expected number.").literal;
+        return (int) (double) consume(NUMBER, "Expected number.").literal;
     }
 
     /**
@@ -362,7 +396,7 @@ public class Parser {
         return new ParseError();
     }
 
-    private void Synchronize() {
+    private void synchronize() {
         advance();
 
         while (!isAtEnd()) {
@@ -393,23 +427,24 @@ public class Parser {
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
             if (check(type)) {
-                // advance();
+                advance();
                 return true;
             }
         }
-
         return false;
     }
 
     private boolean check(TokenType type) {
-        if (isAtEnd())
+        if (isAtEnd()){
             return false;
+        }
         return peek().type == type;
     }
 
     private Token advance() {
-        if (!isAtEnd())
+        if (!isAtEnd()){
             current++;
+        }
         return previous();
     }
 

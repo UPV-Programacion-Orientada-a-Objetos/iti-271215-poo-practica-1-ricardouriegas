@@ -142,6 +142,7 @@ public class Lexer {
                 // Ignore whitespace.
                 break;
             case '\n':
+                // move next line
                 line++;
                 break;
             case '"':

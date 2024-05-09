@@ -2,7 +2,7 @@ package edu.upvictoria.fpoo;
 
 enum TokenType {
     
-    // Data Types
+    // Data Types for CREATE
     INT, VARCHAR, BOOLEAN, DATE, 
     
     // Data Definition (DDL)

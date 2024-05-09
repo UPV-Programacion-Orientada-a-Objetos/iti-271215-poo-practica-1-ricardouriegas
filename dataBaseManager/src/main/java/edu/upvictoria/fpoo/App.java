@@ -27,11 +27,11 @@ public class App {
             String line = reader.readLine();
             if (line == null)
                 break;
-            try{
+            // try{
                 run(line);
-            } catch (Error e) {
-                System.err.println(e.getMessage());
-            }
+            // } catch (Error e) {
+            //     System.err.println(e.getMessage());
+            // }
             
             hadError = false;
         }

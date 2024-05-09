@@ -1,0 +1,49 @@
+class Interpreter implements Clause.Visitor<Void>:
+  table: Table = null
+  index: int = 0
+  PATH: str = ""
+
+  def visit_select_stmnt(clause: Clause) -> Void:
+    # It should have this order of clauses
+    # Load table
+    visit_from_clause(clause.from_clause)
+    # Filter rows
+    visit_where_clause(clause.where_clause)
+    # Order by
+    # Limit
+    # Select
+
+  def visit_from_clause(from_clause: Clause) -> Void:
+    if not Path.exists(PATH + from_clause.identifier):
+      error("Table {from_clause.identifier} does not exist")
+    # Loads the given csv to the 'table' variable
+    table = Table.load(from_clause.identifier)
+
+  def where_clause(where_clause: Clause) -> Void:
+    new_table = new Table()
+    # Each row of the table is evaluated
+    for row in table.get_rows():
+      # Expr functions return boolean
+      if evaluate(where_clause.expr):
+        new_table.add_row(row)
+
+  def visit_binary_expression(expr) -> Object
+    # nombre_alumno = "Ricky"
+    # row = {nombre_alumno: ricy, apellido: uriegas}
+    # get_value(apellido) -> uriegas
+    row: HashMap = table[i]
+    
+    switch expr.operator:
+        "=":
+       	  if Ricky == Ricky
+       	    return True
+       	default:
+       	  error("Invalid operator")
+    return False
+
+
+  evaluate(Expr expr) -> Bool:
+    # WHERE nombre_alumno = "PEDRO"
+    # expr = 'nombre_alumno = "PEDRO"'
+    expr.accept(this)
+    index++
