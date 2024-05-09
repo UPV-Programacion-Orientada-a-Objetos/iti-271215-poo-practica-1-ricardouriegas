@@ -1,5 +1,7 @@
 package edu.upvictoria.fpoo;
 
+import static edu.upvictoria.fpoo.TokenType.*;
+
 import java.io.File;
 import java.util.*;
 
@@ -11,11 +13,11 @@ import java.util.*;
  * transformar el archivo csv en una tabla
  */
 public class Interpreter
-        implements Clause.Visitor<Void>, 
-        Expression.Visitor<Object> 
-    {
+        implements Clause.Visitor<Void>,
+        Expression.Visitor<Object> {
     private String path;
     Table table;
+    int index;
 
     void interpret(Clause clause) {
         excecute(clause);
@@ -64,9 +66,15 @@ public class Interpreter
         }
 
         // create the table
-        Table table = new Table(file);
+        Table table = new Table();
 
         // TODO: create the table and do all that stuff
+        return null;
+    }
+
+    // drop clause
+    @Override
+    public Void dropClause(Clause.DropClause clause) {
         return null;
     }
 
@@ -87,84 +95,129 @@ public class Interpreter
         // limit the table using LIMIT
         visit_limit_clause(clause);
 
-
         return null;
     }
 
     private void visit_from_clause(Clause.SelectClause clause) {
         // load table using the from clause
-        File file = new File(path + clause.table_name + ".csv");
-        if (!file.exists()) {
+        File csvFile = new File(path + clause.table_name + ".csv");
+        File metaFile = new File(path + clause.table_name + ".meta");
+
+        if (!csvFile.exists()) {
             throw new RuntimeException("The table does not exist");
         }
 
-        try {
-            Table table = Table.load(file.getAbsolutePath(), file.getAbsolutePath() + ".meta");
-        } catch (Exception e) {
+        Table table = Table.load(csvFile, metaFile);
+        if (table == null) {
             throw new RuntimeException("Error loading the table");
         }
+
+        this.table = table;
+
     }
 
+    /**
+     * Pseudocode:
+     * def where_clause(where_clause: Clause) -> Void:
+     * new_table = new Table()
+     * # Each row of the table is evaluated
+     * for row in table.get_rows():
+     * # Expr functions return boolean
+     * if evaluate(where_clause.expr):
+     * new_table.add_row(row)
+     * 
+     * @param clause
+     */
     private void visit_where_clause(Clause.SelectClause clause) {
-        // filter with the where clause
-        Table parsialTable = new Table();
-        // Evaluate each row on the table
+        Table partialTable = new Table();
         for (HashMap<String, Object> row : table.getRows()) {
+            // evaluate returns a boolean if the expression is correct for each row
             if (evaluate(clause.where_expression, row)) {
-                parsialTable.addRow(row);
+                partialTable.addRow(row);
             }
         }
-    }
-
-    // drop clause
-    @Override
-    public Void dropClause(Clause.DropClause clause) {
-        return null;
     }
 
     /**
      * Evaluate a expression
      */
-    private boolean evaluate(Expression expression, HashMap<String, Object> row) {
-        return (boolean) expression.accept(this, row);    
+    private Object evaluate(Expr expr) {
+        return expr.accept(this);
     }
 
     /********************************************************************/
-    // Expression visitors
+    /****************************** Expressions Visitors **********************/
     @Override
-    public Object visitBinaryExpression(Expression.Binary expression, HashMap<String, Object> row) {
-        Object left = expression.left.accept(this, row);
-        Object right = expression.right.accept(this, row);
-
-        switch (expression.operator.type) {
-            case GREATER:
-                return (int) left > (int) right;
-            case GREATER_EQUAL:
-                return (int) left >= (int) right;
-            case LESS:
-                return (int) left < (int) right;
-            case LESS_EQUAL:
-                return (int) left <= (int) right;
-            case EQUAL_EQUAL:
-                return left.equals(right);
-            case BANG_EQUAL:
-                return !left.equals(right);
+    public Object visitBinaryExpression(Expression expr) {
+        Object left = evaluate(expr.left);
+        Object right = evaluate(expr.right); 
+        
+        switch (expr.operator.type) {
             case PLUS:
-                return (int) left + (int) right;
+                if (left instanceof Double && right instanceof Double)
+                    return (double)left + (double)right;
+                if (left instanceof String && right instanceof String) //Handle concatenation
+                    return (String)left + (String)right;
+                throw new RuntimeException("Operands must be two numbers or two strings.");
             case MINUS:
-                return (int) left - (int) right;
-            case STAR:
-                return (int) left * (int) right;
+                return (double)left - (double)right;
             case SLASH:
-                return (int) left / (int) right;
+                checkNumberOperand(right);
+                return (double)left / (double)right;
+            case STAR:
+                checkNumberOperand(right);
+                return (double)left * (double)right;
+            case GREATER:
+                checkNumberOperands(left, right);
+                return (double)left > (double)right;
+            case GREATER_EQUAL:
+                checkNumberOperands(left, right);
+                return (double)left >= (double)right;
+            case LESS:
+                checkNumberOperands(left, right);
+                return (double)left < (double)right;
+            case LESS_EQUAL:
+                checkNumberOperands(left, right);
+                return (double)left <= (double)right;
+            case BANG_EQUAL:
+                return !isEqual(left, right);
+            case EQUAL_EQUAL:
+                return isEqual(left, right);
+            case EQUAL:
+                return isEqual(left, right);
+            case AND:
+                return (boolean)left && (boolean)right;
+            case OR:
+                return (boolean)left || (boolean)right;
         }
-
         return null;
+    }
+
+    /**
+     * Checks if an object is a number
+     * @param operator
+     * @param operand
+     */
+    private void checkNumberOperand(Object operand) {
+        if (operand instanceof Double) return;
+        throw new RuntimeException("Operand must be a number.");
+    }
+
+    private void checkNumberOperands(Object left, Object right) {
+        if (left instanceof Double && right instanceof Double) return;
+        
+        throw new RuntimeException("Operands must be numbers.");
+    }
+
+    private boolean isEqual(Object a, Object b) {
+        if (a == null && b == null) return true;
+        if (a == null) return false;
+        return a.equals(b);
     }
 
     @Override
     public Object visitGroupingExpression(Expression.Grouping expression, HashMap<String, Object> row) {
-        return expression.expression.accept(this, row);
+        return evaluate(expression.expression, row);
     }
 
     @Override

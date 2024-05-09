@@ -24,7 +24,7 @@
 <WHERE_CLAUSE>::= WHERE <EXPRESSION> 
 <EXPRESSION>::= <EQUALITY_LEFT> (OR <EQUALITY_LEFT>)*
 <EQUALITY_LEFT>::= <EQUALITY> (AND <EQUALITY>)*
-<EQUALITY>::= <COMPARISION> (( "!=" | "==" ) <COMPARISION>)*
+<EQUALITY>::= <COMPARISION> (( "!=" | "==" | "=" ) <COMPARISION>)*
 <COMPARISION>::= <TERM> (( ">" | ">=" | "<" | "<=" ) <TERM>)*
 <TERM>::= <FACTOR> (( "-" | "+" ) <FACTOR>)*
 <FACTOR>::= <OPERAND> (( "/" | "*" ) <OPERAND>)*
@@ -33,7 +33,7 @@
 -- Valido ahorita que no existe 'IS': 'WHERE ALUMNO == NULL OR APELLIDO != NOT_NULL'
 
 
-<ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> (, <COLUMN_NAME> )* <ORDER_TYPE>? -- TODO: Implementar ASC y DESC for each column
+<ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> <ORDER_TYPE>? (, <COLUMN_NAME> <ORDER_TYPE>?)*
 <ORDER_TYPE>::= ASC | DESC
 <LIMIT_CLAUSE>::= LIMIT <DIGIT> -- TODO: Se puede agregar keyword: ROWS, asi que abria que implementarlo
 
@@ -42,7 +42,7 @@
                                             VALUES 
                                             OPEN_PAR <VALUE> (, <VALUE>)* CLOSE_PAR
 -- UPDATE alumnos SET nombre = 'Pedro' WHERE id = 10;
-<UPDATE_CLAUSE>::= UPDATE <TABLE_NAME> SET <COLUMN_NAME> EQUAL <VALUE> <WHERE_CLAUSE>
+<UPDATE_CLAUSE>::= UPDATE <TABLE_NAME> SET (<COLUMN_NAME> EQUAL <VALUE>)+ <WHERE_CLAUSE>
 -- DELETE FROM alumnos WHERE id = 10;
 -- DELETE FROM alumnos;
 <DELETE_CLAUSE>::= DELETE FROM <TABLE_NAME> <WHERE_CLAUSE>?
@@ -58,7 +58,7 @@
 <ALPHA>::= [a-zA-Z\_\-]
 <DIGIT>::= [0-9]
 <DATA_TYPE>::= NUMBER | STRING | DATE | VARCHAR | BOOLEAN
-<VALUE>::= <STRING> | <DIGIT> 
+<VALUE>::= <STRING> | <DIGIT> | TRUE | FALSE | NULL
 <CONSTRAINT>::= PRIMARY_KEY | NOT_NULL | UNIQUE | NULL
 
 

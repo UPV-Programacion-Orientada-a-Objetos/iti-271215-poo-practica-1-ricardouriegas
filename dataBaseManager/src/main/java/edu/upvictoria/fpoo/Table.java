@@ -2,7 +2,7 @@ package edu.upvictoria.fpoo;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileReader;
+import java.io.*;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ import java.util.Map;
 public class Table {
     private List<HashMap<String, Object>> table;
     private List<String> columnNames;
-    private Map<String, String> columnTypes;
+    private HashMap<String, String> columnTypes;
 
     public Table() {
         table = new ArrayList<>();
@@ -22,39 +22,52 @@ public class Table {
     }
 
     // Method to load data from a CSV file and its metadata from a .meta file
-    public static Table load(String csvFilename, String metaFilename) throws IOException {
+    public static Table load(File csvFile, File metaFile) {
         Table table = new Table();
 
-        // Read metadata from .meta file
-        try (BufferedReader metaReader = new BufferedReader(new FileReader(metaFilename))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(metaFile))) {
             String line;
-            while ((line = metaReader.readLine()) != null) {
-                String[] parts = line.split("\\s+"); // Split by whitespace
-                if (parts.length >= 2) {
-                    String columnName = parts[0];
-                    String dataType = parts[1];
-                    table.addColumn(columnName, dataType);
-                }
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(" ");
+                table.addColumn(parts[0], parts[1]);
             }
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading metadata file");
         }
 
-        // Read data from CSV file
-        try (BufferedReader csvReader = new BufferedReader(new FileReader(csvFilename))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
             String line;
-            while ((line = csvReader.readLine()) != null) {
-                String[] values = line.split(",");
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
                 HashMap<String, Object> row = new HashMap<>();
-                for (int i = 0; i < values.length; i++) {
-                    row.put(table.getColumnName(i), values[i]);
+                for (int i = 0; i < parts.length; i++) {
+                    String columnName = table.getColumnName(i);
+                    String columnType = table.getColumnType(columnName);
+                    Object value = null;
+                    switch (columnType) {
+                        case "int":
+                            value = Integer.parseInt(parts[i]);
+                            break;
+                        case "float":
+                            value = Float.parseFloat(parts[i]);
+                            break;
+                        case "string":
+                            value = parts[i];
+                            break;
+                    }
+                    row.put(columnName, value);
                 }
                 table.addRow(row);
             }
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading CSV file");
         }
-
+        
         return table;
     }
 
     // Method to write data to a CSV file
+    // TODO: Do this correctly 
     public void writeToCSV(String filename) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             // Write header row with column names
@@ -71,7 +84,8 @@ public class Table {
                 writer.write(rowString.toString());
                 writer.newLine();
             }
-        }
+        } 
+
     }
 
     // Method to write metadata to a .meta file

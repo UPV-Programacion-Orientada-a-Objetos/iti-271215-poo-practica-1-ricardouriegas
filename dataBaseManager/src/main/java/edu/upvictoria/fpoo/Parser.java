@@ -2,8 +2,8 @@ package edu.upvictoria.fpoo;
 
 import static edu.upvictoria.fpoo.TokenType.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
 // import static java.lang.Integer.parseInt;
 
 /**
@@ -57,6 +57,12 @@ public class Parser {
             return dropClause();
         if (match(SELECT))
             return selectClause();
+        if (match(INSERT))
+            return insertClause();
+        if (match(UPDATE))
+            return updateClause();
+        if (match(DELETE))
+            return deleteClause();
 
         throw error(peek(), "Expected statement.");
     }
@@ -232,30 +238,36 @@ public class Parser {
     // <EXPRESSION>::= <EQUALITY_LEFT> (OR <EQUALITY_LEFT>)*
     private Expression expression() {
         Expression left = equalityLeft();
+
         while (match(OR)) {
             Expression right = equalityLeft();
             left = new Expression.Binary(left, previous(), right);
         }
+
         return left;
     }
 
     // <EQUALITY_LEFT>::= <EQUALITY> (AND <EQUALITY>)*
     private Expression equalityLeft() {
         Expression left = equality();
+
         while (match(AND)) {
             Expression right = equality();
             left = new Expression.Binary(left, previous(), right);
         }
+
         return left;
     }
 
-    // <EQUALITY>::= <COMPARISION> (( "!=" | "==" ) <COMPARISION>)*
+    // <EQUALITY>::= <COMPARISION> (( "!=" | "==" | "=") <COMPARISION>)*
     private Expression equality() {
         Expression left = comparision();
-        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
+
+        while (match(BANG_EQUAL, EQUAL, EQUAL_EQUAL)) {
             Expression right = comparision();
             left = new Expression.Binary(left, previous(), right);
         }
+
         return left;
     }
 
@@ -308,18 +320,25 @@ public class Parser {
     }
 
 
-    // <ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> (, <COLUMN_NAME> )* <ORDER_TYPE>?
+    // <ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> <ORDER_TYPE>? (, <COLUMN_NAME> <ORDER_TYPE>?)* 
     private List<String> orderBy() {
         List<String> columns = new ArrayList<>();
         columns.add(consume(IDENTIFIER, "Expected column name after ORDER_BY keyword.").lexeme);
         
+        if (orderType()) {
+            columns.add(previous().lexeme);
+        } else {
+            columns.add("ASC");
+        }
+        
         while (match(COMMA)) {
             //// consume(COMMA, "Missed coma");
             columns.add(consume(IDENTIFIER, "Expected column name in ORDER_BY.").lexeme);
-        }
-
-        if (orderType()) {
-            return columns;
+            if (orderType()) {
+                columns.add(previous().lexeme);
+            } else {
+                columns.add("ASC");
+            }
         }
 
         return columns;
@@ -337,6 +356,103 @@ public class Parser {
     private int limitClause() {
         return (int) (double) consume(NUMBER, "Expected number.").literal;
     }
+
+    /**************************************************************************/
+    /******************************* INSERT ***********************************/
+    /**************************************************************************/
+    // <INSERT_CLAUSE>::= INSERT INTO <TABLE_NAME> OPEN_PAR <COLUMN_NAME> (, <COLUMN_NAME>)*  CLOSE_PAR 
+    // VALUES OPEN_PAR <VALUE> (, <VALUE>)* CLOSE_PAR
+    // example of an insert
+    // INSERT INTO table_name (column1, column2, column3) VALUES (value1, value2, value3)
+    private Clause insertClause() {
+        consume(INTO, "Expected keyword INTO after INSERT.");
+        Token table_name = consume(IDENTIFIER, "Expected table name.");
+        consume(LEFT_PAREN, "Expected ( after table name.");
+
+        List<String> columns = new ArrayList<>();
+        columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
+        while (match(COMMA)) {
+            columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
+        }
+
+        consume(RIGHT_PAREN, "Expected ) after column names.");
+
+        consume(VALUES, "Expected keyword VALUES after column names.");
+        consume(LEFT_PAREN, "Expected ( before values.");
+
+        List<Token> values = new ArrayList<>();
+        values.add(value());
+        while (match(COMMA)) {
+            values.add(value());
+        }
+
+        consume(RIGHT_PAREN, "Expected ) after values.");
+
+        return new Clause.InsertClause(table_name.lexeme, columns, values);
+    }
+    
+    // <VALUE>::= <DIGIT> | <STRING> | TRUE | FALSE | NULL
+    private Token value() {
+        if (match(NUMBER, STRING, TRUE, FALSE, NULL)) {
+            return previous();
+        }
+
+        throw error(peek(), "Expected value.");
+    }
+
+    /**************************************************************************/
+    /****************************UPDATE**********************************/
+    /**************************************************************************/
+    // example of an update
+    // UPDATE table_name SET column_name = 2 WHERE column_name = 2;
+    // <UPDATE_CLAUSE>::= UPDATE <TABLE_NAME> SET (<COLUMN_NAME> EQUAL <VALUE>)+ <WHERE_CLAUSE>
+    private Clause updateClause() {
+        Token table_name = consume(IDENTIFIER, "Expected table name.");
+        consume(SET, "Expected keyword SET after table name.");
+
+        List<String> columns = new ArrayList<>();    
+        Token value = null;
+
+        columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
+        consume(EQUAL, "Expected = after column name.");
+        if (match(NUMBER, STRING, TRUE, FALSE, NULL)) {
+            value = previous();
+        } else {
+            throw error(peek(), "Expected value.");
+        }
+
+        while (match(COMMA)) {
+            columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
+            consume(EQUAL, "Expected = after column name.");
+            value = consume(NUMBER, "Expected value.");
+        }
+
+        Expression where_expression = null;
+        if (match(WHERE)) {
+            where_expression = whereClause();
+        }
+
+        return new Clause.UpdateClause(table_name.lexeme, columns, value, where_expression);
+    }
+
+    /**************************************************************************/
+    /****************************DELETE**********************************/
+    /**************************************************************************/
+    // <DELETE_CLAUSE>::= DELETE FROM <TABLE_NAME> <WHERE_CLAUSE>
+    // example of a delete
+    // DELETE FROM table_name WHERE column_name = 2;
+    private Clause deleteClause() {
+        consume(FROM, "Expected keyword FROM after DELETE.");
+        Token table_name = consume(IDENTIFIER, "Expected table name.");
+
+        Expression where_expression = null;
+        if (match(WHERE)) {
+            where_expression = whereClause();
+        }
+
+        return new Clause.DeleteClause(table_name.lexeme, where_expression);
+    }
+
 
     /**
      * ************************************************************
@@ -357,6 +473,7 @@ public class Parser {
         throw error(peek(), message);
     }
 
+    
     /**
      * This function is used to report an error and return a ParseError exception
      * 

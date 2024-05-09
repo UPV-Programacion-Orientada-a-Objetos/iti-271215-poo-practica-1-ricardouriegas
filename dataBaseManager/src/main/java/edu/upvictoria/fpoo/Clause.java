@@ -11,9 +11,12 @@ abstract class Clause {
         R dropClause(DropClause clause);
 
         R selectClause(SelectClause clause);
-        // R insertClause(InsertClause clause);
-        // R updateClause(UpdateClause clause);
-        // R deleteClause(DeleteClause clause);
+
+        R insertClause(InsertClause clause);
+        
+        R updateClause(UpdateClause clause);
+        
+        R deleteClause(DeleteClause clause);
     }
 
     static class UseClause extends Clause {
@@ -70,54 +73,70 @@ abstract class Clause {
         DropClause(String lexeme) {
             this.lexeme = lexeme;
         }
-
+        
         @Override
         <R> R accept(Visitor<R> visitor) {
             return visitor.dropClause(this);
         }
-
+        
         final String lexeme;
     }
+    
+    static class InsertClause extends Clause {
+        InsertClause(String lexeme, List<String> columns, List<Token> values) {
+            this.lexeme = lexeme;
+            this.columns = columns;
+            this.values = values;
+            
+        }
+        
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.insertClause(this);
+        }
+        
+        final String lexeme;
+        final List<String> columns;
+        final List<Token> values;
+        
+    }
+    
+    //// new Clause.UpdateClause(table_name.lexeme, column_name.lexeme, value, where_expression);
+    static class UpdateClause extends Clause {
+        UpdateClause(String table_name, List<String> columns, Token value, Expression where_expression) {
+            this.table_name = table_name;
+            this.columns = columns;
+            this.value = value;
+            this.where_expression = where_expression;
+        }
+        
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.updateClause(this);
+        }
+        
+        final String table_name;
+        final List<String> columns;
+        final Token value;
+        final Expression where_expression;
+        
+    }
+    
+    //// new Clause.DeleteClause(table_name.lexeme, where_expression);
+    static class DeleteClause extends Clause {
+        DeleteClause(String table_name, Expression where_expression) {
+            this.table_name = table_name;
+            this.where_expression = where_expression;
+        }
 
-    /**
-     * static class InsertClause extends Clause {
-     * InsertClause(String path) {
-     * this.path = path;
-     * }
-     * 
-     * @Override
-     *           <R> R accept(Visitor<R> visitor) {
-     *           return visitor.insertClause(this);
-     *           }
-     * 
-     *           final String path;
-     *           }
-     * 
-     *           static class UpdateClause extends Clause {
-     *           UpdateClause(String path) {
-     *           this.path = path;
-     *           }
-     * 
-     * @Override
-     *           <R> R accept(Visitor<R> visitor) {
-     *           return visitor.updateClause(this);
-     *           }
-     * 
-     *           final String path;
-     *           }
-     * 
-     *           static class DeleteClause extends Clause {
-     *           DeleteClause(String path) {
-     *           this.path = path;
-     *           }
-     * 
-     * @Override
-     *           <R> R accept(Visitor<R> visitor) {
-     *           return visitor.deleteClause(this);
-     *           }
-     * 
-     *           final String path;
-     *           }
-     */
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.deleteClause(this);
+        }
+
+        final String table_name;
+        final Expression where_expression;
+    }
+
     abstract <R> R accept(Visitor<R> visitor);
 }

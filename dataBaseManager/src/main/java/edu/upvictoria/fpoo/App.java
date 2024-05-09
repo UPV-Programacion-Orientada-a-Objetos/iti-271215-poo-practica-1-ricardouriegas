@@ -58,7 +58,7 @@ public class App {
         System.out.println(new AstPrinter().print(expression));
     }
     
-
+    
     /**
      * This method will report an error
      * 
