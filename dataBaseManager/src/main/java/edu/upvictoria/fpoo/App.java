@@ -20,6 +20,7 @@ import java.util.List;
  * SELECT nombre, edad FROM alumnos WHERE edad > 18 ORDER_BY edad DESC LIMIT 10;
  * UPDATE alumnos SET edad = 21 WHERE nombre = "Juan";
  * DELETE FROM alumnos WHERE nombre = "Juan";
+ * DROP TABLE alumnos;
  */
 public class App {
     // static boolean hadError = false;
@@ -41,6 +42,8 @@ public class App {
                 run(line);
             } catch (Error e) {
                 System.err.println(e.getMessage());
+            } catch (Exception e) {
+                System.err.println("An error occurred.");
             }
 
             // hadError = false;

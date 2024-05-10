@@ -127,27 +127,24 @@ public class Table {
     // Method to add a row to the table
     public void addRow(HashMap<String, Object> row) {
         // save strings in quotes
-        for (String columnName : columnNames) {
-            Object value = row.get(columnName);
-            if (value instanceof String) {
-                String stringValue = (String) value;
-                if (!stringValue.startsWith("\"") && !stringValue.endsWith("\"")) {
-                    row.put(columnName, "\"" + stringValue + "\"");
-                }
-            }
-        }
+        // for (String columnName : columnNames) {
+        //     Object value = row.get(columnName);
+        //     if (value instanceof String) {
+        //         String stringValue = (String) value;
+        //         if (!stringValue.startsWith("\"") && !stringValue.endsWith("\"")) {
+        //             row.put(columnName, "\"" + stringValue + "\"");
+        //         }
+        //     }
+        // }
 
         // add the row to the table
         table.add(row);
     }
 
     // Method to add a column name and data type to the table
-    public void addColumn(String columnName, String dataType, List<String> constraints) {
+    public void addColumn(String columnName, String dataType) {
         columnNames.add(columnName);
         columnTypes.put(columnName, dataType);
-        for (String constraint : constraints) {
-            this.constraints.add(constraint);
-        }
     }
 
     // Method to update a row in the table
@@ -217,9 +214,9 @@ public class Table {
     // Method sort using java's vanilla function
     public void sort(String columnName) {
         // Check if the column name exists
-        if (!columnNames.contains(columnName)) {
-            throw new IllegalArgumentException("Column '" + columnName + "' does not exist.");
-        }
+        // if (!columnNames.contains(columnName)) {
+        //     throw new IllegalArgumentException("Column '" + columnName + "' does not exist.");
+        // }
 
         // Define a custom comparator to compare rows based on the specified column
         Comparator<HashMap<String, Object>> comparator = (row1, row2) -> {
@@ -250,9 +247,10 @@ public class Table {
     // Method to sort in reverse order
     public void sortReverse(String columnName) {
         // Check if the column name exists
-        if (!columnNames.contains(columnName)) {
-            throw new IllegalArgumentException("Column '" + columnName + "' does not exist.");
-        }
+        // if (!columnNames.contains(columnName)) {
+        //     // throw new IllegalArgumentException("Column '" + columnName + "' does not exist.");
+        //     return;   
+        // }
 
         // Define a custom comparator to compare rows based on the specified column
         Comparator<HashMap<String, Object>> comparator = (row1, row2) -> {

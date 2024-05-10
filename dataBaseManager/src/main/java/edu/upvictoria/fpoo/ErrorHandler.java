@@ -24,6 +24,14 @@ public class ErrorHandler {
     }
 
     /**
+     * TODO: implement this error method on the interpreter and the table class
+     * @param message
+     */
+    static void error(String message) {
+        throw new Error(message);
+    }
+
+    /**
      * This method will report an error
      * 
      * @param line

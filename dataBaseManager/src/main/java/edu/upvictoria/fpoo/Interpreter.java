@@ -128,7 +128,7 @@ public class Interpreter
         // [2][2] = Column type
         // [2][2 ... n] = Constraints
         for (List<String> column : clause.columnsDefinition) {
-            table.addColumn(column.get(0), column.get(1), column.subList(2, column.size()));
+            table.addColumn(column.get(0), column.get(1));
         }
 
         // save the table
@@ -378,10 +378,10 @@ public class Interpreter
             case EQUAL:
                 return isEqual(left, right);
             // TODO: Check this methods
-            case AND:
-                return (boolean) left && (boolean) right;
-            case OR:
-                return (boolean) left || (boolean) right;
+            // case AND:
+            //     return (boolean) left && (boolean) right;
+            // case OR:
+            //     return (boolean) left || (boolean) right;
         }
 
         return null;
@@ -444,10 +444,5 @@ public class Interpreter
 
         return null;
     }
-
-    // TODO: I miss handle the errors with a function and not with a throw everytime
-    // private void error(String... message) {
-    // throw new RuntimeException(Arrays.toString(message));
-    // }
 
 }
