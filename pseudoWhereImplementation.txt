@@ -29,13 +29,13 @@ class Interpreter implements Clause.Visitor<Void>:
 
   def visit_binary_expression(expr) -> Object
     # nombre_alumno = "Ricky"
-    # row = {nombre_alumno: ricy, apellido: uriegas}
+    # row = {nombre_alumno: ric, apellido: uriegas}
     # get_value(apellido) -> uriegas
     row: HashMap = table[i]
     
     switch expr.operator:
         "=":
-       	  if Ricky == Ricky
+       	  if Ric == Ric
        	    return True
        	default:
        	  error("Invalid operator")

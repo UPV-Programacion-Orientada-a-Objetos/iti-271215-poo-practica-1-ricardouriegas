@@ -4,15 +4,24 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
-// TODO: Validar en el interpreter que el numero de argumentos y valores en la insert clause sean iguales. e.g. insert no valido "INSERT INTO alumnos (nombre, edad) VALUES ('Juan', 20, 'Pedro', 21);"
+
 /**
  * Somthing i need to say:
- * I take order by has order_by (with the underscore)
+ * I take order by has order_by (with the underscore) the same with NOT_NULL
  * And i make all the sentence in uppercase
+ * This is a First Practice and it doesnt need to validate things so dates are not validated to be treaten as dates
  * I use only the doble quotes ("") for the strings not the single quotes ('')
  */
+
+/**
+ * Example of some sentences:
+ * CREATE TABLE alumnos (nombre "STRING" PRIMARY_KEY, edad 1 NOT_NULL, fecha_nacimiento "10/10/1001" NULL);
+ * INSERT INTO alumnos (nombre, edad, fecha_nacimiento) VALUES ("Juan", 20, "2000-01-01");
+ * SELECT nombre, edad FROM alumnos WHERE edad > 18 ORDER_BY edad DESC LIMIT 10;
+ * DELETE FROM alumnos WHERE nombre = "Juan";
+ */
 public class App {
-    static boolean hadError = false;
+    // static boolean hadError = false;
 
     public static void main(String[] args) throws IOException {
         runPrompt();
@@ -27,13 +36,13 @@ public class App {
             String line = reader.readLine();
             if (line == null)
                 break;
-            try{
+            try {
                 run(line);
             } catch (Error e) {
                 System.err.println(e.getMessage());
             }
-            
-            hadError = false;
+
+            // hadError = false;
         }
     }
 
@@ -47,47 +56,13 @@ public class App {
         Clause expression = parser.parse();
 
         // Interpret
-        // Interpreter interpreter = new Interpreter();
-        // interpreter.interpret(expression);
+        Interpreter interpreter = new Interpreter();
+        interpreter.interpret(expression);
 
         // Stop if there was a syntax error.
-        if (hadError)
-            return;
+        // if (hadError)
+        //     return;
 
-        System.out.println(expression);
-        System.out.println(new AstPrinter().print(expression));
-    }
-    
-    
-    /**
-     * This method will report an error
-     * 
-     * @param line
-     * @param message
-     */
-    static void error(int line, String message) {
-        report(line, "", message);
-    }
-
-    static void error(Token token, String message) {
-        if (token.type == TokenType.EOS) {
-            report(token.line, " at end", message);
-        } else {
-            report(token.line, " at '" + token.lexeme + "'", message);
-        }
-    }
-
-    /**
-     * This method will report an error
-     * 
-     * @param line
-     * @param where
-     * @param message
-     */
-    private static void report(int line, String where, String message) {
-        hadError = true;
-        throw new Error("[line " + line + "] Error" + where + ": " + message);
-        // System.err.println(
-        // "[line " + line + "] Error" + where + ": " + message);
+        // System.out.println(new AstPrinter().print(expression));
     }
 }

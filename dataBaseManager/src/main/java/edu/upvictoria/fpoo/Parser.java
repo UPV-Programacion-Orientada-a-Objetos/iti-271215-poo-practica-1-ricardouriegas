@@ -45,7 +45,7 @@ public class Parser {
         consume(SEMICOLON, "Expected ; of statement.");
         return expression;
     }
-    
+
     // <SENTENCE>::= <USE_CLAUSE> | <CREATE_CLAUSE> | <DROP_CLAUSE> |
     // <SELECT_CLAUSE> | <INSERT_CLAUSE> | <UPDATE_CLAUSE> | <DELETE_CLAUSE>
     private Clause sentence() {
@@ -158,7 +158,7 @@ public class Parser {
     // <TABLE_NAME>::= <STRING>
     private Clause dropClause() {
         consume(TABLE, "Expected keyword TABLE after DROP.");
-        Token name = consume(IDENTIFIER, "Expected table name.");
+        Token name = consume(IDENTIFIER, "Expected table name at the drop.");
         return new Clause.DropClause(name.lexeme);
     }
 
@@ -205,7 +205,7 @@ public class Parser {
 
         // from clause
         consume(FROM, "Expected keyword FROM after column names.");
-        String table_name = consume(IDENTIFIER, "Expected table name.").lexeme;
+        String table_name = consume(IDENTIFIER, "Expected table name at the select.").lexeme;
 
         Expression where_expression = null;
         List<String> columns_order = null;
@@ -226,7 +226,8 @@ public class Parser {
             limit = limitClause();
         }
 
-        return new Clause.SelectClause(columns, table_name, where_expression, columns_order, limit);
+        return new Clause.SelectClause(
+                columns, table_name, where_expression, columns_order, limit);
     }
 
     // <WHERE_CLAUSE>::= WHERE <EXPRESSION>
@@ -234,7 +235,6 @@ public class Parser {
         return expression();
     }
 
-    
     // <EXPRESSION>::= <EQUALITY_LEFT> (OR <EQUALITY_LEFT>)*
     private Expression expression() {
         Expression left = equalityLeft();
@@ -319,18 +319,18 @@ public class Parser {
         throw error(peek(), "Expected operand.");
     }
 
-
-    // <ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> <ORDER_TYPE>? (, <COLUMN_NAME> <ORDER_TYPE>?)* 
+    // <ORDER_BY_CLAUSE>::= ORDER BY <COLUMN_NAME> <ORDER_TYPE>? (, <COLUMN_NAME>
+    // <ORDER_TYPE>?)*
     private List<String> orderBy() {
         List<String> columns = new ArrayList<>();
         columns.add(consume(IDENTIFIER, "Expected column name after ORDER_BY keyword.").lexeme);
-        
+
         if (orderType()) {
             columns.add(previous().lexeme);
         } else {
             columns.add("ASC");
         }
-        
+
         while (match(COMMA)) {
             //// consume(COMMA, "Missed coma");
             columns.add(consume(IDENTIFIER, "Expected column name in ORDER_BY.").lexeme);
@@ -360,16 +360,20 @@ public class Parser {
     /**************************************************************************/
     /******************************* INSERT ***********************************/
     /**************************************************************************/
-    // <INSERT_CLAUSE>::= INSERT INTO <TABLE_NAME> OPEN_PAR <COLUMN_NAME> (, <COLUMN_NAME>)*  CLOSE_PAR 
+    // <INSERT_CLAUSE>::= INSERT INTO <TABLE_NAME> OPEN_PAR <COLUMN_NAME> (,
+    // <COLUMN_NAME>)* CLOSE_PAR
     // VALUES OPEN_PAR <VALUE> (, <VALUE>)* CLOSE_PAR
     // example of an insert
-    // INSERT INTO table_name (column1, column2, column3) VALUES (value1, value2, value3)
+    // INSERT INTO table_name (column1, column2, column3) VALUES (value1, value2,
+    // value3)
     private Clause insertClause() {
         consume(INTO, "Expected keyword INTO after INSERT.");
         Token table_name = consume(IDENTIFIER, "Expected table name.");
         consume(LEFT_PAREN, "Expected ( after table name.");
 
         List<String> columns = new ArrayList<>();
+        List<Token> values = new ArrayList<>();
+        
         columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
         while (match(COMMA)) {
             columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
@@ -380,17 +384,28 @@ public class Parser {
         consume(VALUES, "Expected keyword VALUES after column names.");
         consume(LEFT_PAREN, "Expected ( before values.");
 
-        List<Token> values = new ArrayList<>();
         values.add(value());
+
         while (match(COMMA)) {
             values.add(value());
         }
 
         consume(RIGHT_PAREN, "Expected ) after values.");
 
-        return new Clause.InsertClause(table_name.lexeme, columns, values);
+        // check that columns and values have the same length
+        if (columns.size() != values.size()) {
+            throw error(peek(), "Expected same number of columns and values.");
+        }
+
+        HashMap<String, Object> valuesMap = new HashMap<>(); // <column_name, value>
+        for (int i = 0; i < columns.size(); i++) {
+            valuesMap.put(columns.get(i), values.get(i).literal);
+        }
+
+
+        return new Clause.InsertClause(table_name.lexeme, valuesMap);
     }
-    
+
     // <VALUE>::= <DIGIT> | <STRING> | TRUE | FALSE | NULL
     private Token value() {
         if (match(NUMBER, STRING, TRUE, FALSE, NULL)) {
@@ -401,16 +416,18 @@ public class Parser {
     }
 
     /**************************************************************************/
-    /****************************UPDATE**********************************/
+    /**************************** UPDATE **********************************/
     /**************************************************************************/
     // example of an update
     // UPDATE table_name SET column_name = 2 WHERE column_name = 2;
-    // <UPDATE_CLAUSE>::= UPDATE <TABLE_NAME> SET (<COLUMN_NAME> EQUAL <VALUE>)+ <WHERE_CLAUSE>
+    // <UPDATE_CLAUSE>::= UPDATE <TABLE_NAME> SET (<COLUMN_NAME> EQUAL <VALUE>)+
+    // <WHERE_CLAUSE>
     private Clause updateClause() {
         Token table_name = consume(IDENTIFIER, "Expected table name.");
         consume(SET, "Expected keyword SET after table name.");
 
-        List<String> columns = new ArrayList<>();    
+        List<String> columns = new ArrayList<>();
+        Expression where_expression = null;
         Token value = null;
 
         columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
@@ -427,23 +444,27 @@ public class Parser {
             value = consume(NUMBER, "Expected value.");
         }
 
-        Expression where_expression = null;
         if (match(WHERE)) {
             where_expression = whereClause();
         }
 
-        return new Clause.UpdateClause(table_name.lexeme, columns, value, where_expression);
+        HashMap<String, Object> valuesMap = new HashMap<>(); // <column_name, value>
+        for (int i = 0; i < columns.size(); i++) {
+            valuesMap.put(columns.get(i), value.literal);
+        }
+
+        return new Clause.UpdateClause(table_name.lexeme, valuesMap, where_expression);
     }
 
     /**************************************************************************/
-    /****************************DELETE**********************************/
+    /**************************** DELETE **********************************/
     /**************************************************************************/
     // <DELETE_CLAUSE>::= DELETE FROM <TABLE_NAME> <WHERE_CLAUSE>
     // example of a delete
     // DELETE FROM table_name WHERE column_name = 2;
     private Clause deleteClause() {
         consume(FROM, "Expected keyword FROM after DELETE.");
-        Token table_name = consume(IDENTIFIER, "Expected table name.");
+        Token table_name = consume(IDENTIFIER, "Expected table name at FROM.");
 
         Expression where_expression = null;
         if (match(WHERE)) {
@@ -452,7 +473,6 @@ public class Parser {
 
         return new Clause.DeleteClause(table_name.lexeme, where_expression);
     }
-
 
     /**
      * ************************************************************
@@ -473,7 +493,6 @@ public class Parser {
         throw error(peek(), message);
     }
 
-    
     /**
      * This function is used to report an error and return a ParseError exception
      * 
@@ -482,7 +501,7 @@ public class Parser {
      * @return
      */
     private ParseError error(Token token, String message) {
-        App.error(token, message);
+        ErrorHandler.error(token, message);
         return new ParseError();
     }
 
@@ -525,14 +544,14 @@ public class Parser {
     }
 
     private boolean check(TokenType type) {
-        if (isAtEnd()){
+        if (isAtEnd()) {
             return false;
         }
         return peek().type == type;
     }
 
     private Token advance() {
-        if (!isAtEnd()){
+        if (!isAtEnd()) {
             current++;
         }
         return previous();

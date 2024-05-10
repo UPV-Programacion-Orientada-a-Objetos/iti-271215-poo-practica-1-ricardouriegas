@@ -1,6 +1,6 @@
 package edu.upvictoria.fpoo;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * This class should represent a node in the AST

@@ -1,5 +1,6 @@
 package edu.upvictoria.fpoo;
 
+import java.util.HashMap;
 import java.util.List;
 
 abstract class Clause {
@@ -83,10 +84,9 @@ abstract class Clause {
     }
     
     static class InsertClause extends Clause {
-        InsertClause(String lexeme, List<String> columns, List<Token> values) {
+        InsertClause(String lexeme, HashMap<String, Object> valuesMap) {
             this.lexeme = lexeme;
-            this.columns = columns;
-            this.values = values;
+            this.valuesMap = valuesMap;
             
         }
         
@@ -96,17 +96,15 @@ abstract class Clause {
         }
         
         final String lexeme;
-        final List<String> columns;
-        final List<Token> values;
+        final HashMap<String, Object> valuesMap;
         
     }
     
     //// new Clause.UpdateClause(table_name.lexeme, column_name.lexeme, value, where_expression);
     static class UpdateClause extends Clause {
-        UpdateClause(String table_name, List<String> columns, Token value, Expression where_expression) {
+        UpdateClause(String table_name, HashMap<String, Object> valuesMap, Expression where_expression) {
             this.table_name = table_name;
-            this.columns = columns;
-            this.value = value;
+            this.valuesMap = valuesMap;
             this.where_expression = where_expression;
         }
         
@@ -116,8 +114,7 @@ abstract class Clause {
         }
         
         final String table_name;
-        final List<String> columns;
-        final Token value;
+        final HashMap<String, Object> valuesMap;
         final Expression where_expression;
         
     }

@@ -157,7 +157,7 @@ public class Lexer {
                 } else if (isAlpha(c)) {
                     identifier();
                 } else {
-                    App.error(line, "Unexpected character: " + c);
+                    ErrorHandler.error(line, "Unexpected character: " + c);
                 }
                 break;
         }
@@ -237,7 +237,7 @@ public class Lexer {
         }
         
         if (isAtEnd()) {
-            App.error(line, "Unterminated string.");
+            ErrorHandler.error(line, "Unterminated string.");
             return;
         }
         

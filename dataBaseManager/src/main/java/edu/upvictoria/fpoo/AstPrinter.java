@@ -58,9 +58,9 @@ public class AstPrinter implements Expression.Visitor<String>, Clause.Visitor<St
         StringBuilder builder = new StringBuilder();
         builder.append("UPDATE ").append(clause.table_name).append(" ");
         builder.append("SET ");
-        for (int i = 0; i < clause.columns.size(); i++) {
-            builder.append(clause.columns.get(i)).append(" = ").append(printExpression(clause.value));
-            if (i != clause.columns.size() - 1) {
+        for (int i = 0; i < clause.valuesMap.size(); i++) {
+            builder.append(clause.valuesMap.get(i)).append(" = ").append(printExpression(clause.valuesMap.get(i)));
+            if (i != clause.valuesMap.size() - 1) {
                 builder.append(", ");
             }
         }
@@ -115,19 +115,29 @@ public class AstPrinter implements Expression.Visitor<String>, Clause.Visitor<St
         // Implementation for InsertClause printing
         StringBuilder builder = new StringBuilder();
         builder.append("INSERT INTO ").append(clause.lexeme).append(" ");
-        if (!clause.columns.isEmpty()) {
-            builder.append("(").append(String.join(", ", clause.columns)).append(") ");
-        }
+        builder.append("(").append(String.join(", ", clause.valuesMap.keySet())).append(") ");
         builder.append("VALUES (");
-        for (int i = 0; i < clause.values.size(); i++) {
-            builder.append(printExpression(clause.values.get(i)));
-            if (i != clause.values.size() - 1) {
+        for (int i = 0; i < clause.valuesMap.size(); i++) {
+            builder.append(printExpression(clause.valuesMap.get(i)));
+            if (i != clause.valuesMap.size() - 1) {
                 builder.append(", ");
             }
         }
         builder.append(") ");
         return builder.toString();
     }
+
+    private String printExpression(Object value) {
+        if (value == null) {
+            return "NULL";
+        } else if (value instanceof String) {
+            return "'" + value + "'";
+        } else if (value instanceof Number) {
+            return value.toString();
+        } else {
+            throw new IllegalArgumentException("Unsupported value type: " + value.getClass().getSimpleName());
+        }
+    }    
 
     private String printExpression(Token expr) {
         if (expr instanceof Token) {
