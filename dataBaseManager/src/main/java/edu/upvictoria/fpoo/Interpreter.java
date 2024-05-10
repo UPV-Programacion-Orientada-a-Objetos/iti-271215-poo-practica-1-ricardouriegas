@@ -76,25 +76,31 @@ public class Interpreter
         }
 
         // delete the row in the table
-        visit_where_clause_delete(clause);
+        visit_where_clause_delete(clause, table);
+
+        // save the table
+        table.save(file);
 
         return null;
     }
 
-    private void visit_where_clause_delete(Clause.DeleteClause clause) {
-        Table partialTable = new Table();
-        for (HashMap<String, Object> row : table.getRows()) {
+    private void visit_where_clause_delete(Clause.DeleteClause clause, Table table) {
+        List<String> columnNames = table.getColumnNames();
+
+        Iterator<HashMap<String, Object>> iterator = table.getRows().iterator();
+        while (iterator.hasNext()) {
+            HashMap<String, Object> row = iterator.next();
             currentRow = row;
             if ((Boolean) evaluate(clause.where_expression)) {
-                partialTable.removeRow(row);
+                iterator.remove();
             }
         }
-        this.table = partialTable;
-        this.currentRow = null;
 
-        // save the table
-        File file = new File(path + clause.table_name + ".csv");
-        table.save(file);
+        // write at the beginning the column names
+        table.writeColumnNames(columnNames);
+
+        this.table = table;
+        this.currentRow = null;
     }
 
     // create Clause
@@ -178,15 +184,18 @@ public class Interpreter
     }
 
     private void visit_where_clause_update(Clause.UpdateClause clause, Table table) {
+        List<String> columnNames = table.getColumnNames();
         for (HashMap<String, Object> row : table.getRows()) {
             currentRow = row;
             if ((Boolean) evaluate(clause.where_expression)) {
-                // update the row
-                for (Map.Entry<String, Object> entry : clause.valuesMap.entrySet()) {
-                    row.put(entry.getKey(), entry.getValue());
+                for (String column : clause.valuesMap.keySet()) {
+                    row.put(column, clause.valuesMap.get(column));
                 }
             }
         }
+        // write at the beginning the column names
+        table.writeColumnNames(columnNames);
+
         this.table = table;
         this.currentRow = null;
     }

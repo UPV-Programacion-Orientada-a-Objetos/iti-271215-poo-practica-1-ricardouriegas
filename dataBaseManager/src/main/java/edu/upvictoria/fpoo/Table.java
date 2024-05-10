@@ -73,14 +73,23 @@ public class Table {
     // Method to write data to a CSV file
     public void writeToCSV(File file) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+
+            // Write the column names
+            writer.write(String.join(",", columnNames));
+
+            // Write the rows
             for (HashMap<String, Object> row : table) {
+                writer.newLine();
                 List<String> values = new ArrayList<>();
                 for (String columnName : columnNames) {
                     Object value = row.get(columnName);
-                    values.add(value == null ? "null" : value.toString());
+                    if (value instanceof String) {
+                        values.add("\"" + value + "\"");
+                    } else {
+                        values.add(value.toString());
+                    }
                 }
                 writer.write(String.join(",", values));
-                writer.newLine();
             }
         } catch (SecurityException e) {
             throw new RuntimeException("The program does not have permission to write the database .csv file", e);
@@ -143,6 +152,9 @@ public class Table {
 
     // Method to update a row in the table
     public void updateRow(HashMap<String, Object> row, int index) {
+        if (index < 0 || index >= table.size()) {
+            return;
+        }
         table.set(index, row);
     }
 
@@ -268,14 +280,18 @@ public class Table {
         Collections.sort(table, comparator);
     }
 
-    // methdo removeRow
-    public void removeRow(HashMap<String, Object> row) {
-        for (int i = 0; i < table.size(); i++) {
-            if (table.get(i).equals(row)) {
-                table.remove(i);
-                break;
+    // Method to delete a row
+    public void deleteRow(HashMap<String, Object> rowToDelete) {
+        Iterator<HashMap<String, Object>> iterator = table.iterator();
+        while (iterator.hasNext()) {
+            HashMap<String, Object> row = iterator.next();
+            if (row.equals(rowToDelete)) {
+                iterator.remove();
+                return; // Row found and deleted, exit the method
             }
         }
+        // If the row is not found, throw an exception or handle it as needed
+        throw new IllegalArgumentException("Row not found in the table.");
     }
 
     // Method to print the table
@@ -284,5 +300,11 @@ public class Table {
         for (HashMap<String, Object> row : table) {
             System.out.println(row);
         }
+    }
+
+    // Method to write the column name at the beginning of the table
+    public void writeColumnNames(List<String> columnName) {
+        // write the column names at the beginning of the table
+        columnNames = columnName;
     }
 }
