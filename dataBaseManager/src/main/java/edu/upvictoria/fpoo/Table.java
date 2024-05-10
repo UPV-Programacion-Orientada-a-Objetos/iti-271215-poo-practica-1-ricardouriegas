@@ -1,16 +1,7 @@
 package edu.upvictoria.fpoo;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class Table {
@@ -40,7 +31,7 @@ public class Table {
                 table_obj.columnNames.add(columnName.toUpperCase());
             }
         } catch (IOException e) {
-            e.printStackTrace(); // TODO: Handle this error properly
+            throw new RuntimeException("Error reading .csv file", e);
         }
 
         // Read the rest of the CSV file
@@ -56,7 +47,7 @@ public class Table {
                 table_obj.table.add(row);
             }
         } catch (IOException e) {
-            e.printStackTrace(); // TODO: Handle this error properly
+            throw new RuntimeException("Error reading .csv file", e);
         }
 
         return table_obj;
@@ -75,52 +66,6 @@ public class Table {
         else {
             return value;
         }
-    }
-
-    private static List<String> readColumnNamesFromMeta(File metaFile) {
-        List<String> columnNames = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(metaFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(" ");
-                columnNames.add(parts[0]);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return columnNames;
-    }
-
-    private static List<String> readColumnTypesFromMeta(File metaFile) {
-        List<String> columnTypes = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(metaFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(" ");
-                columnTypes.add(parts[1]);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return columnTypes;
-    }
-
-    private static List<List<String>> readColumnConstraintsFromMeta(File metaFile) {
-        List<List<String>> columnConstraints = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(metaFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(" ");
-                List<String> constraints = new ArrayList<>();
-                for (int i = 2; i < parts.length; i++) {
-                    constraints.add(parts[i]);
-                }
-                columnConstraints.add(constraints);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return columnConstraints;
     }
 
     /**************************************************************************/
@@ -321,6 +266,16 @@ public class Table {
 
         // Sort the table using the specified comparator
         Collections.sort(table, comparator);
+    }
+
+    // methdo removeRow
+    public void removeRow(HashMap<String, Object> row) {
+        for (int i = 0; i < table.size(); i++) {
+            if (table.get(i).equals(row)) {
+                table.remove(i);
+                break;
+            }
+        }
     }
 
     // Method to print the table

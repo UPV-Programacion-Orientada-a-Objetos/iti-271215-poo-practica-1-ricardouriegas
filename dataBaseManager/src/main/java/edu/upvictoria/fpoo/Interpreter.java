@@ -76,9 +76,25 @@ public class Interpreter
         }
 
         // delete the row in the table
-        // visit_delete_where_clause(clause.where_expression);
+        visit_where_clause_delete(clause);
 
         return null;
+    }
+
+    private void visit_where_clause_delete(Clause.DeleteClause clause) {
+        Table partialTable = new Table();
+        for (HashMap<String, Object> row : table.getRows()) {
+            currentRow = row;
+            if ((Boolean) evaluate(clause.where_expression)) {
+                partialTable.removeRow(row);
+            }
+        }
+        this.table = partialTable;
+        this.currentRow = null;
+
+        // save the table
+        File file = new File(path + clause.table_name + ".csv");
+        table.save(file);
     }
 
     // create Clause
@@ -110,8 +126,6 @@ public class Interpreter
         }
 
         // save the table
-        File metaFile = new File(path + clause.name + ".meta");
-
         table.save(file);
 
         return null;
@@ -129,28 +143,6 @@ public class Interpreter
         Table table = Table.load(file);
         if (table == null) {
             throw new RuntimeException("Error loading the table");
-        }
-
-        // check if the columns are correct
-        if (clause.valuesMap.size() != table.getColumnNames().size()) {
-            throw new RuntimeException("The columns are not correct");
-        }
-
-        // check if the types are correct
-        for (String column : clause.valuesMap.keySet()) {
-            String type = table.getColumnType(column);
-            if (type == null) {
-                throw new RuntimeException("The column does not exist");
-            }
-
-            // check if the type is correct
-            if (type.equals("int") && !(clause.valuesMap.get(column) instanceof Integer)) {
-                throw new RuntimeException("The value is not correct");
-            } else if (type.equals("float") && !(clause.valuesMap.get(column) instanceof Float)) {
-                throw new RuntimeException("The value is not correct");
-            } else if (type.equals("string") && !(clause.valuesMap.get(column) instanceof String)) {
-                throw new RuntimeException("The value is not correct");
-            }
         }
 
         // insert the row in the table
@@ -176,44 +168,27 @@ public class Interpreter
             throw new RuntimeException("Error loading the table");
         }
 
-        // check if the columns are correct
-        if (clause.valuesMap.size() != table.getColumnNames().size()) {
-            throw new RuntimeException("The columns are not correct");
-        }
-
-        // check if the types are correct
-        for (String column : clause.valuesMap.keySet()) {
-            String type = table.getColumnType(column);
-            if (type == null) {
-                throw new RuntimeException("The column does not exist");
-            }
-
-            // check if the type is correct
-            if (type.equals("int") && !(clause.valuesMap.get(column) instanceof Integer)) {
-                throw new RuntimeException("The value is not correct");
-            } else if (type.equals("float") && !(clause.valuesMap.get(column) instanceof Float)) {
-                throw new RuntimeException("The value is not correct");
-            } else if (type.equals("string") && !(clause.valuesMap.get(column) instanceof String)) {
-                throw new RuntimeException("The value is not correct");
-            }
-        }
-
         // update the row in the table
-        visit_update_where_clause(clause.where_expression, clause.valuesMap);
+        visit_where_clause_update(clause, table);
+
+        // save the table
+        table.save(file);
 
         return null;
     }
 
-    private void visit_update_where_clause(
-            Expression where_expression, HashMap<String, Object> valuesMap) {
+    private void visit_where_clause_update(Clause.UpdateClause clause, Table table) {
         for (HashMap<String, Object> row : table.getRows()) {
-            // evaluate returns a boolean if the expression is correct for each row
-            if (evaluate(where_expression) == row.get(where_expression.toString())) {
-                for (String column : valuesMap.keySet()) {
-                    row.put(column, valuesMap.get(column));
+            currentRow = row;
+            if ((Boolean) evaluate(clause.where_expression)) {
+                // update the row
+                for (Map.Entry<String, Object> entry : clause.valuesMap.entrySet()) {
+                    row.put(entry.getKey(), entry.getValue());
                 }
             }
         }
+        this.table = table;
+        this.currentRow = null;
     }
 
     // drop clause

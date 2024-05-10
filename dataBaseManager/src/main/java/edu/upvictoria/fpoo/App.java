@@ -18,6 +18,7 @@ import java.util.List;
  * CREATE TABLE alumnos (nombre "STRING" PRIMARY_KEY, edad 1 NOT_NULL, fecha_nacimiento "10/10/1001" NULL);
  * INSERT INTO alumnos (nombre, edad, fecha_nacimiento) VALUES ("Juan", 20, "2000-01-01");
  * SELECT nombre, edad FROM alumnos WHERE edad > 18 ORDER_BY edad DESC LIMIT 10;
+ * UPDATE alumnos SET edad = 21 WHERE nombre = "Juan";
  * DELETE FROM alumnos WHERE nombre = "Juan";
  */
 public class App {
