@@ -1,50 +1,80 @@
 package edu.upvictoria.fpoo;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class Table {
-    private List<HashMap<String, Object>> table; // [1] <Key, Value>
+    private List<HashMap<String, Object>> table; // [1] <Key, Value> the key is
     private List<String> columnNames;
     private HashMap<String, String> columnTypes;
+    private List<String> constraints;
+    // Compile regex pattern
+    private static final Pattern number_pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
 
     public Table() {
         // Initialize table, columnNames, and columnTypes
-        table = new ArrayList<>();
+        table = new ArrayList<HashMap<String, Object>>();
         columnNames = new ArrayList<>();
         columnTypes = new HashMap<>();
+        // constraints = new ArrayList<>();
     }
 
-    // Method to load data from a CSV file and its metadata from a .meta file
-    public static Table load(File csvFile, File metaFile) {
-        Table table = new Table();
+    // Method to load data from a CSV file into a Table object
+    public static Table load(File csvFile) {
+        Table table_obj = new Table();
 
-        // Read column names from the metadata file
-        List<String> columnNames = readColumnNamesFromMeta(metaFile);
-        for (String columnName : columnNames) {
-            table.addColumn(columnName, "string"); // Assuming all columns are of string type initially
+        // Get the first row of the CSV to save the column names
+        try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
+            String[] columnNames = reader.readLine().split(",");
+            for (String columnName : columnNames) {
+                table_obj.columnNames.add(columnName.toUpperCase());
+            }
+        } catch (IOException e) {
+            e.printStackTrace(); // TODO: Handle this error properly
         }
 
-        // Read data from CSV file and populate the table
+        // Read the rest of the CSV file
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
+            reader.readLine(); // Skip the first row (column names)
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
+                String[] values = line.split(",");
                 HashMap<String, Object> row = new HashMap<>();
-                for (int i = 0; i < parts.length; i++) {
-                    String columnName = columnNames.get(i);
-                    Object value = parseValue(parts[i]);
-                    row.put(columnName, value);
+                for (int i = 0; i < values.length; i++) {
+                    row.put(table_obj.columnNames.get(i), parseValue(values[i]));
                 }
-                table.addRow(row);
+                table_obj.table.add(row);
             }
-        } catch (SecurityException e) {
-            throw new RuntimeException("The program does not have permission to read the database .csv file");
         } catch (IOException e) {
-            throw new RuntimeException("Error reading .csv file");
+            e.printStackTrace(); // TODO: Handle this error properly
         }
 
-        return table;
+        return table_obj;
+    }
+
+    private static Object parseValue(String value) {
+        if (value.startsWith("\"") && value.endsWith("\"")) {
+            return value.substring(1, value.length() - 1);
+        }
+        // Evaluate if the value is a number
+        else if (number_pattern.matcher(value).matches()) {
+            return Double.parseDouble(value);
+        }
+        // In the rare case of not being able to
+        // parse the value, return it as is
+        else {
+            return value;
+        }
     }
 
     private static List<String> readColumnNamesFromMeta(File metaFile) {
@@ -55,57 +85,71 @@ public class Table {
                 String[] parts = line.split(" ");
                 columnNames.add(parts[0]);
             }
-        } catch (SecurityException e) {
-            throw new RuntimeException("The program does not have permission to read the database .meta file");
         } catch (IOException e) {
-            throw new RuntimeException("Error reading .meta file");
+            e.printStackTrace();
         }
         return columnNames;
     }
 
-    private static Object parseValue(String value) {
-        if ("null".equals(value)) {
-            return null;
-        } else {
-            return value;
-        }
-    }
-
-    // Method to write data to a CSV file
-    public void writeToCSV(String filename) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            // Write header row with column names
-            writer.write(String.join(",", columnNames));
-            writer.newLine();
-
-            // Write data rows
-            for (HashMap<String, Object> row : table) {
-                StringBuilder rowString = new StringBuilder();
-                for (String columnName : columnNames) {
-                    Object value = row.get(columnName);
-                    if (value instanceof String) {
-                        rowString.append("\"").append(value).append("\",");
-                    } else {
-                        rowString.append(value).append(",");
-                    }
-                }
-                rowString.deleteCharAt(rowString.length() - 1); // Remove last comma
-                writer.write(rowString.toString());
-                writer.newLine();
+    private static List<String> readColumnTypesFromMeta(File metaFile) {
+        List<String> columnTypes = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(metaFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(" ");
+                columnTypes.add(parts[1]);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error writing .csv file", e);
+            e.printStackTrace();
+        }
+        return columnTypes;
+    }
+
+    private static List<List<String>> readColumnConstraintsFromMeta(File metaFile) {
+        List<List<String>> columnConstraints = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(metaFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(" ");
+                List<String> constraints = new ArrayList<>();
+                for (int i = 2; i < parts.length; i++) {
+                    constraints.add(parts[i]);
+                }
+                columnConstraints.add(constraints);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return columnConstraints;
+    }
+
+    /**************************************************************************/
+
+    // Method to write data to a CSV file
+    public void writeToCSV(File file) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            for (HashMap<String, Object> row : table) {
+                List<String> values = new ArrayList<>();
+                for (String columnName : columnNames) {
+                    Object value = row.get(columnName);
+                    values.add(value == null ? "null" : value.toString());
+                }
+                writer.write(String.join(",", values));
+                writer.newLine();
+            }
         } catch (SecurityException e) {
             throw new RuntimeException("The program does not have permission to write the database .csv file", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error writing .csv file", e);
         }
     }
 
     // Method to write metadata to a .meta file
-    public void writeToMeta(String filename) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+    public void writeToMeta(File file) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (String columnName : columnNames) {
                 String dataType = columnTypes.get(columnName);
-                writer.write(columnName + " " + dataType);
+                writer.write(columnName + " " + dataType + " " + constraints);
                 writer.newLine();
             }
         } catch (SecurityException e) {
@@ -116,10 +160,9 @@ public class Table {
     }
 
     // Method to save data to a CSV file and its metadata to a .meta file
-    public void save(File csvFile, File metaFile) {
+    public void save(File csvFile) {
         try {
-            writeToCSV(csvFile.getAbsolutePath());
-            writeToMeta(metaFile.getAbsolutePath());
+            writeToCSV(csvFile);
         } catch (SecurityException e) {
             throw new RuntimeException("The program does not have permission to write the database files");
         } catch (RuntimeException e) {
@@ -129,13 +172,28 @@ public class Table {
 
     // Method to add a row to the table
     public void addRow(HashMap<String, Object> row) {
+        // save strings in quotes
+        for (String columnName : columnNames) {
+            Object value = row.get(columnName);
+            if (value instanceof String) {
+                String stringValue = (String) value;
+                if (!stringValue.startsWith("\"") && !stringValue.endsWith("\"")) {
+                    row.put(columnName, "\"" + stringValue + "\"");
+                }
+            }
+        }
+
+        // add the row to the table
         table.add(row);
     }
 
     // Method to add a column name and data type to the table
-    public void addColumn(String columnName, String dataType) {
+    public void addColumn(String columnName, String dataType, List<String> constraints) {
         columnNames.add(columnName);
         columnTypes.put(columnName, dataType);
+        for (String constraint : constraints) {
+            this.constraints.add(constraint);
+        }
     }
 
     // Method to update a row in the table

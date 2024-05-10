@@ -23,7 +23,8 @@ public class Interpreter
     // variables
     private String path;
     Table table;
-    int index;
+    HashMap<String, Object> currentRow = null;
+    // int index;
 
     void interpret(Clause clause) {
         excecute(clause);
@@ -64,13 +65,12 @@ public class Interpreter
     @Override
     public Void deleteClause(Clause.DeleteClause clause) {
         File file = new File(path + clause.table_name + ".csv");
-        File metaFile = new File(path + clause.table_name + ".meta");
 
         if (!file.exists()) {
             throw new RuntimeException("The table does not exist");
         }
 
-        Table table = Table.load(file, metaFile);
+        Table table = Table.load(file);
         if (table == null) {
             throw new RuntimeException("Error loading the table");
         }
@@ -97,15 +97,22 @@ public class Interpreter
         // create the table
         Table table = new Table();
 
-        // create the table and do all that stuff
+        // add the columns
+        // clause.columnsDefinition =
+        // [1][1] = Column name
+        // [1][2] = Column type
+        // [1][2 ... n] = Constraints
+        // [2][1] = Column name
+        // [2][2] = Column type
+        // [2][2 ... n] = Constraints
         for (List<String> column : clause.columnsDefinition) {
-            table.addColumn(column.get(0), column.get(1));
+            table.addColumn(column.get(0), column.get(1), column.subList(2, column.size()));
         }
 
         // save the table
         File metaFile = new File(path + clause.name + ".meta");
 
-        table.save(file, metaFile);
+        table.save(file);
 
         return null;
     }
@@ -114,13 +121,12 @@ public class Interpreter
     @Override
     public Void insertClause(Clause.InsertClause clause) {
         File file = new File(path + clause.lexeme + ".csv");
-        File metaFile = new File(path + clause.lexeme + ".meta");
 
         if (!file.exists()) {
             throw new RuntimeException("The table does not exist");
         }
 
-        Table table = Table.load(file, metaFile);
+        Table table = Table.load(file);
         if (table == null) {
             throw new RuntimeException("Error loading the table");
         }
@@ -151,7 +157,7 @@ public class Interpreter
         table.addRow(clause.valuesMap);
 
         // save the table
-        table.save(file, metaFile);
+        table.save(file);
 
         return null;
     }
@@ -160,13 +166,12 @@ public class Interpreter
     @Override
     public Void updateClause(Clause.UpdateClause clause) {
         File file = new File(path + clause.table_name + ".csv");
-        File metaFile = new File(path + clause.table_name + ".meta");
 
         if (!file.exists()) {
             throw new RuntimeException("The table does not exist");
         }
 
-        Table table = Table.load(file, metaFile);
+        Table table = Table.load(file);
         if (table == null) {
             throw new RuntimeException("Error loading the table");
         }
@@ -225,12 +230,9 @@ public class Interpreter
         return null;
     }
 
-    
     // select clause
     @Override
     public Void selectClause(Clause.SelectClause clause) {
-        // List<String> columns, String table_name, Expression
-        // where_expression, List<String> columns_order, int limit
         // load table using the from clause
         visit_from_clause(clause);
 
@@ -259,13 +261,12 @@ public class Interpreter
     private void visit_from_clause(Clause.SelectClause clause) {
         // load table using the from clause
         File csvFile = new File(path + clause.table_name + ".csv");
-        File metaFile = new File(path + clause.table_name + ".meta");
 
         if (!csvFile.exists()) {
             throw new RuntimeException("The table does not exist");
         }
 
-        Table table = Table.load(csvFile, metaFile);
+        Table table = Table.load(csvFile);
         if (table == null) {
             throw new RuntimeException("Error loading the table");
         }
@@ -289,11 +290,13 @@ public class Interpreter
     private void visit_where_clause(Clause.SelectClause clause) {
         Table partialTable = new Table();
         for (HashMap<String, Object> row : table.getRows()) {
-            // evaluate returns a boolean if the expression is correct for each row
-            if (evaluate(clause.where_expression) == row.get(clause.where_expression.toString())) {
+            currentRow = row;
+            if ((Boolean) evaluate(clause.where_expression)) {
                 partialTable.addRow(row);
             }
         }
+        this.table = partialTable;
+        this.currentRow = null;
     }
 
     /**
@@ -352,6 +355,7 @@ public class Interpreter
     /**************************************************************************/
     /****************************** Expressions Visitors **********************/
     /**************************************************************************/
+    // SELECT * FROM tablita WHERE nombre = "Juan" AND edad = 20 OR edad = 30;
     @Override
     public Object visitBinaryExpression(Expression.Binary expr) {
         Object left = evaluate(expr.left);
@@ -359,45 +363,37 @@ public class Interpreter
 
         switch (expr.operator.type) {
             case PLUS:
-                if (left instanceof Double && right instanceof Double)
-                    return (double) left + (double) right;
-                if (left instanceof String && right instanceof String)
-                    return (String) left + (String) right;
-                throw new RuntimeException("Operands must be two numbers or two strings.");
+                checkNumberOperands(left, right);
+                return (double) left + (double) right;
             case MINUS:
+                checkNumberOperands(left, right);
                 return (double) left - (double) right;
             case SLASH:
-                checkNumberOperand(right);
+                checkNumberOperands(left, right);
                 return (double) left / (double) right;
             case STAR:
-                checkNumberOperand(right);
+                checkNumberOperands(left, right);
                 return (double) left * (double) right;
             case GREATER:
-                if (checkNumberOperands(left, right))
-                    return (double) left > (double) right;
-                if (checkStringOperands(left, right))
-                    return ((String) left).compareTo((String) right) <= 0;
+                checkNumberOperands(left, right);
+                return (double) left > (double) right;
             case GREATER_EQUAL:
-                if (checkNumberOperands(left, right))
-                    return (double) left >= (double) right;
-                if (checkStringOperands(left, right))
-                    return ((String) left).compareTo((String) right) <= 0;
+                checkNumberOperands(left, right);
+                return (double) left > (double) right;
             case LESS:
-                if (checkNumberOperands(left, right))
-                    return (double) left < (double) right;
-                if (checkStringOperands(left, right))
-                    return ((String) left).compareTo((String) right) <= 0;
+                checkNumberOperands(left, right);
+                return (double) left < (double) right;
             case LESS_EQUAL:
-                if (checkNumberOperands(left, right))
-                    return (double) left <= (double) right;
-                if (checkStringOperands(left, right))
-                    return ((String) left).compareTo((String) right) <= 0;
+                checkNumberOperands(left, right);
+                return (double) left <= (double) right;
+            // TODO: Should work for strings too (i.e. checkStrNumOperands)
             case BANG_EQUAL:
                 return !isEqual(left, right);
             case EQUAL_EQUAL:
                 return isEqual(left, right);
             case EQUAL:
                 return isEqual(left, right);
+            // TODO: Check this methods
             case AND:
                 return (boolean) left && (boolean) right;
             case OR:
@@ -416,10 +412,9 @@ public class Interpreter
         throw new RuntimeException("Operand must be a number.");
     }
 
-    private boolean checkNumberOperands(Object left, Object right) {
+    private void checkNumberOperands(Object left, Object right) {
         if (left instanceof Double && right instanceof Double)
-            return false;
-
+            return;
         throw new RuntimeException("Operands must be numbers.");
     }
 
@@ -445,7 +440,11 @@ public class Interpreter
 
     @Override
     public Object visitLiteralExpression(Expression.Literal expression) {
-        return expression.value;
+        if (expression.isColumnName) {
+            return currentRow.get(expression.value);
+        } else {
+            return expression.value;
+        }
     }
 
     @Override

@@ -2,7 +2,9 @@ package edu.upvictoria.fpoo;
 
 import static edu.upvictoria.fpoo.TokenType.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 // import static java.lang.Integer.parseInt;
 
@@ -107,18 +109,18 @@ public class Parser {
         Token name = consume(IDENTIFIER, "Expected column name.");
         String type = dataType();
 
-        List<String> constraints = new ArrayList<>();
-        constraints.add(name.lexeme);
-        constraints.add(type);
+        List<String> result = new ArrayList<>();
+        result.add(name.lexeme);
+        result.add(type);
 
         while (true) {
             String constraint = constraint();
             if (constraint == null)
                 break;
-            constraints.add(constraint);
+            result.add(constraint);
         }
 
-        return constraints;
+        return result;
     }
 
     // <DATA_TYPE>::= NUMBER | STRING | DATE | VARCHAR | BOOLEAN
@@ -240,8 +242,9 @@ public class Parser {
         Expression left = equalityLeft();
 
         while (match(OR)) {
+            Token operator = previous();
             Expression right = equalityLeft();
-            left = new Expression.Binary(left, previous(), right);
+            left = new Expression.Binary(left, operator, right);
         }
 
         return left;
@@ -252,8 +255,9 @@ public class Parser {
         Expression left = equality();
 
         while (match(AND)) {
+            Token operator = previous();
             Expression right = equality();
-            left = new Expression.Binary(left, previous(), right);
+            left = new Expression.Binary(left, operator, right);
         }
 
         return left;
@@ -264,8 +268,9 @@ public class Parser {
         Expression left = comparision();
 
         while (match(BANG_EQUAL, EQUAL, EQUAL_EQUAL)) {
+            Token operator = previous();
             Expression right = comparision();
-            left = new Expression.Binary(left, previous(), right);
+            left = new Expression.Binary(left, operator, right);
         }
 
         return left;
@@ -276,8 +281,9 @@ public class Parser {
         Expression left = term();
 
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            Token operator = previous();
             Expression right = term();
-            left = new Expression.Binary(left, previous(), right);
+            left = new Expression.Binary(left, operator, right);
         }
 
         return left;
@@ -287,8 +293,9 @@ public class Parser {
     private Expression term() {
         Expression left = factor();
         while (match(MINUS, PLUS)) {
+            Token operator = previous();
             Expression right = factor();
-            left = new Expression.Binary(left, previous(), right);
+            left = new Expression.Binary(left, operator, right);
         }
         return left;
     }
@@ -297,8 +304,9 @@ public class Parser {
     private Expression factor() {
         Expression left = operand();
         while (match(SLASH, STAR)) {
+            Token operator = previous();
             Expression right = operand();
-            left = new Expression.Binary(left, previous(), right);
+            left = new Expression.Binary(left, operator, right);
         }
         return left;
     }
@@ -306,8 +314,11 @@ public class Parser {
     // <OPERAND>::= <NUMBER> | <STRING> | TRUE | FALSE | NULL | NOT_NULL |
     // IDENTIFIER | "(" <EXPRESSION> ")"
     private Expression operand() {
-        if (match(NUMBER, STRING, TRUE, FALSE, NULL, NOT_NULL, IDENTIFIER)) {
-            return new Expression.Literal(previous().literal);
+        if (match(NUMBER, STRING, TRUE, FALSE, NULL, NOT_NULL)) {
+            return new Expression.Literal(previous().literal, false);
+        }
+        if (match(IDENTIFIER)) {
+            return new Expression.Literal(previous().lexeme, true);
         }
 
         if (match(LEFT_PAREN)) {
@@ -373,7 +384,7 @@ public class Parser {
 
         List<String> columns = new ArrayList<>();
         List<Token> values = new ArrayList<>();
-        
+
         columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
         while (match(COMMA)) {
             columns.add(consume(IDENTIFIER, "Expected column name.").lexeme);
@@ -401,7 +412,6 @@ public class Parser {
         for (int i = 0; i < columns.size(); i++) {
             valuesMap.put(columns.get(i), values.get(i).literal);
         }
-
 
         return new Clause.InsertClause(table_name.lexeme, valuesMap);
     }

@@ -1,11 +1,60 @@
 package edu.upvictoria.fpoo;
 
+import static edu.upvictoria.fpoo.TokenType.AND;
+import static edu.upvictoria.fpoo.TokenType.ASC;
+import static edu.upvictoria.fpoo.TokenType.BANG;
+import static edu.upvictoria.fpoo.TokenType.BANG_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.BOOLEAN;
+import static edu.upvictoria.fpoo.TokenType.COMMA;
+import static edu.upvictoria.fpoo.TokenType.CREATE;
+import static edu.upvictoria.fpoo.TokenType.DATABASE;
+import static edu.upvictoria.fpoo.TokenType.DATE;
+import static edu.upvictoria.fpoo.TokenType.DELETE;
+import static edu.upvictoria.fpoo.TokenType.DESC;
+import static edu.upvictoria.fpoo.TokenType.DROP;
+import static edu.upvictoria.fpoo.TokenType.EQUAL;
+import static edu.upvictoria.fpoo.TokenType.EQUAL_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.FALSE;
+import static edu.upvictoria.fpoo.TokenType.FROM;
+import static edu.upvictoria.fpoo.TokenType.GREATER;
+import static edu.upvictoria.fpoo.TokenType.GREATER_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.IDENTIFIER;
+import static edu.upvictoria.fpoo.TokenType.INSERT;
+import static edu.upvictoria.fpoo.TokenType.INT;
+import static edu.upvictoria.fpoo.TokenType.INTO;
+import static edu.upvictoria.fpoo.TokenType.LEFT_PAREN;
+import static edu.upvictoria.fpoo.TokenType.LESS;
+import static edu.upvictoria.fpoo.TokenType.LESS_EQUAL;
+import static edu.upvictoria.fpoo.TokenType.LIMIT;
+import static edu.upvictoria.fpoo.TokenType.MINUS;
+import static edu.upvictoria.fpoo.TokenType.NOT;
+import static edu.upvictoria.fpoo.TokenType.NOT_NULL;
+import static edu.upvictoria.fpoo.TokenType.NULL;
+import static edu.upvictoria.fpoo.TokenType.NUMBER;
+import static edu.upvictoria.fpoo.TokenType.OR;
+import static edu.upvictoria.fpoo.TokenType.ORDER_BY;
+import static edu.upvictoria.fpoo.TokenType.PLUS;
+import static edu.upvictoria.fpoo.TokenType.PRIMARY_KEY;
+import static edu.upvictoria.fpoo.TokenType.RIGHT_PAREN;
+import static edu.upvictoria.fpoo.TokenType.SELECT;
+import static edu.upvictoria.fpoo.TokenType.SEMICOLON;
+import static edu.upvictoria.fpoo.TokenType.SET;
+import static edu.upvictoria.fpoo.TokenType.SLASH;
+import static edu.upvictoria.fpoo.TokenType.STAR;
+import static edu.upvictoria.fpoo.TokenType.STRING;
+import static edu.upvictoria.fpoo.TokenType.TABLE;
+import static edu.upvictoria.fpoo.TokenType.TRUE;
+import static edu.upvictoria.fpoo.TokenType.UNIQUE;
+import static edu.upvictoria.fpoo.TokenType.UPDATE;
+import static edu.upvictoria.fpoo.TokenType.USE;
+import static edu.upvictoria.fpoo.TokenType.VALUES;
+import static edu.upvictoria.fpoo.TokenType.VARCHAR;
+import static edu.upvictoria.fpoo.TokenType.WHERE;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-
-import static edu.upvictoria.fpoo.TokenType.*;
 
 /**
  * This object will be in charge of receive the SQL query and tokenize it
@@ -177,7 +226,10 @@ public class Lexer {
         
         if (type == null)
             type = IDENTIFIER;
-        addToken(type);
+
+        // the identifiers keywords (e.g. Keyword: AGE) must be saved in 
+        // uppercase so the comparisons work downstream 
+        addToken(type, text.toUpperCase()); 
     }
 
     

@@ -53,8 +53,9 @@ abstract class Expression {
   }
 
   static class Literal extends Expression {
-    Literal(Object value) {
+    Literal(Object value, Boolean isColumnName) {
       this.value = value;
+      this.isColumnName = isColumnName;
     }
 
     @Override
@@ -63,6 +64,7 @@ abstract class Expression {
     }
 
     final Object value;
+    final Boolean isColumnName;
   }
 
   static class Unary extends Expression {
